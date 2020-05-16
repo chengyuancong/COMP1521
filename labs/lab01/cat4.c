@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-# define MAX 100
-
 void copy(FILE *, FILE *);
 
 int main(int argc, char *argv[]) {
@@ -15,13 +13,14 @@ int main(int argc, char *argv[]) {
         for (int i = 1; i < argc; i++) {
             FILE * fp = fopen(argv[i], "r");
             if (fp == NULL) {
-                printf("Can't read NameofFile\n");
+                fprintf(stderr, "Can't read %s\n", argv[i]);
             } else {
                 copy(fp, stdout);
                 fclose(fp);
             }
         }
     }
+    return EXIT_SUCCESS;
 }
 
 // Copy contents of input to output
@@ -29,8 +28,8 @@ int main(int argc, char *argv[]) {
 
 void copy(FILE *input, FILE *output)
 {
-    char buf[MAX];
-    while (fgets(buf, MAX, input) != NULL) {
+    char buf[BUFSIZ];
+    while (fgets(buf, BUFSIZ, input) != NULL) {
         fputs(buf, output);
     }
 }

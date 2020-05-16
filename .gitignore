@@ -8,6 +8,7 @@
 !*.txt
 !*.md
 !*.gitignore
+!*Makefile
 
 # except all dirs
 !*/

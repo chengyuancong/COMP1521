@@ -28,6 +28,7 @@ void addBigNums(BigNum n, BigNum m, BigNum *res)
    }
    res->bytes = realloc(res->bytes, res->nbytes);
    assert(res->bytes != NULL);
+   memset(res->bytes, '0', res->nbytes);
    int i = 0;
    int carry = 0;
    int sum = 0;
@@ -51,8 +52,135 @@ void addBigNums(BigNum n, BigNum m, BigNum *res)
    }
    if (carry == 1) {
       res->bytes[i] = '1';
-   } else {
-      res->bytes[i] = '0';
+   }
+}
+
+// Subtract two BigNums and store result in a third BigNum
+void subtractBigNums(BigNum n, BigNum m, BigNum *res)
+{  
+   int length_n = 0;
+   int length_m = 0;
+   int i = n.nbytes - 1;
+   while (n.bytes[i] == '0' && i > 0) {
+      i--;
+   }
+   while (i >= 0) {
+      length_n++;
+      i--;
+   }
+   i = m.nbytes - 1;
+   while (m.bytes[i] == '0' && i > 0) {
+      i--;
+   }
+   while (i >= 0) {
+      length_m++;
+      i--;
+   }
+   if (length_n < length_m) {
+      BigNum tmp = n;
+      n = m;
+      m = tmp;
+   } else if (length_m == length_n) {
+      int k = length_m - 1;
+      while (k >= 0) {
+         if (n.bytes[k] < m.bytes[k]) {
+            BigNum tmp = n;
+            n = m;
+            m = tmp;
+            break;
+         }
+         k--;
+      }
+   }
+   if (res->nbytes < n.nbytes) {
+      res->nbytes = n.nbytes;
+      res->bytes = realloc(res->bytes, res->nbytes);
+      assert(res->bytes != NULL);
+      memset(res->bytes, '0', res->nbytes);
+   }
+   int j = 0;
+   int carry = 0;
+   int diff = 0;
+   while (j < res->nbytes) {
+      diff = 0;
+      if (j < n.nbytes) {
+         diff += n.bytes[j] - '0';
+      }
+      if (j < m.nbytes) {
+         diff -= m.bytes[j] - '0';
+      }
+      diff += carry;
+      if (diff < 0) {
+         res->bytes[j] = (10 + diff) + '0';
+         carry = -1;
+      } else {
+         res->bytes[j] = diff + '0';
+         carry = 0;
+      }
+      j++;
+   }
+}
+
+// Multiply two BigNums and store result in a third BigNum
+void multiplyBigNums(BigNum n, BigNum m, BigNum *res)
+{
+   int length_n = 0;
+   int length_m = 0;
+   int i = n.nbytes - 1;
+   while (n.bytes[i] == '0' && i > 0) {
+      i--;
+   }
+   while (i >= 0) {
+      length_n++;
+      i--;
+   }
+   i = m.nbytes - 1;
+   while (m.bytes[i] == '0' && i > 0) {
+      i--;
+   }
+   while (i >= 0) {
+      length_m++;
+      i--;
+   }
+   BigNum digit_produtct[length_m];
+   for (int k = 0; k < length_m; k++) {
+      initBigNum(&digit_produtct[k], n.nbytes + m.nbytes);
+   }
+   for (int k = 0; k < length_m; k++) {
+      int j = 0;
+      int carry = 0;
+      int product = 0;
+      while(j < length_n) {
+         product = (n.bytes[j] - '0')* (m.bytes[k] - '0') + carry;
+         digit_produtct[k].bytes[k + j] = (product % 10) + '0';
+         carry = product / 10;
+         j++;
+      }
+      if (carry > 0) {
+         digit_produtct[k].bytes[k + j] = carry + '0';
+      }
+   }
+   if (res->nbytes < n.nbytes + m.nbytes) {
+      res->nbytes = n.nbytes + m.nbytes;
+      res->bytes = realloc(res->bytes, res->nbytes);
+      assert(res->bytes != NULL);
+      memset(res->bytes, '0', res->nbytes);
+   }
+   for (int k = 0; k < length_m; k++) {
+      int l = 0;
+      int carry = 0;
+      int sum = 0;
+      while (l < n.nbytes + m.nbytes) {
+         sum = (res->bytes[l] - '0') + (digit_produtct[k].bytes[l] - '0') + carry;
+         if (sum >= 10) {
+            res->bytes[l] = (sum - 10) + '0';
+            carry = 1;
+         } else {
+            res->bytes[l] = sum + '0';
+            carry = 0;
+         }
+         l++;
+      }
    }
 }
 
@@ -74,10 +202,14 @@ int scanBigNum(char *s, BigNum *n)
       cp++;
       k++;
    }
-
+   if (num_len == 0) {
+      return 0;
+   }
    if (num_len > n->nbytes) {
       n->nbytes = num_len;
       n->bytes = realloc(n->bytes, n->nbytes);
+      assert(n->bytes != NULL);
+      memset(n->bytes, '0', n->nbytes);
    }
    int i = 0;
    int j = num_len - 1;

@@ -1,7 +1,9 @@
 # CP1521 Lab02 Makefile
-all: add multiply subtract
+
 CC=gcc
 CFLAGS=-Wall -Werror -std=gnu99
+
+all: add multiply subtract
 
 add : add.o BigNum.o
 	$(CC) -o add add.o BigNum.o

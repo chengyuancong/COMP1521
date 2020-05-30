@@ -14,9 +14,9 @@ struct _bit_fields {
 int main(void)
 {
    struct _bit_fields x;
-   x.a = 0x1;
-   x.b = 0x22;
-   x.c = 0x33333;
+   x.a = 0x0;
+   x.b = 0x12;
+   x.c = 0x34567;
 
    printf("%lu\n",sizeof(x));
    char * p = (char *)&x;

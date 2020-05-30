@@ -1,7 +1,7 @@
 // make_a_float ... read in bit strings to build a float value
 // CP1521 Lab03 exercises
 // Written by John Shepherd, August 2017
-// Completed by ...
+// Completed by Yuancong
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +14,7 @@ struct _float {
    // define bit_fields for sign, exp and frac
    // obviously they need to be larger than 1-bit each
    // and may need to be defined in a different order
-   unsigned int sign:1, exp:1, frac:1;
+   unsigned int sign: 1, exp: 8, frac: 23;
 };
 typedef struct _float Float32;
 
@@ -29,10 +29,12 @@ void    checkArgs(int, char **);
 Union32 getBits(char *, char *, char *);
 char   *showBits(Word, char *);
 int     justBits(char *, int);
+Union32 convWord(Float32);
+Union32 convFloat(Word);
 
 int main(int argc, char **argv)
 {
-   union _bits32 u;
+   Union32 u;
    char out[50];
 
    // here's a hint ...
@@ -46,7 +48,14 @@ int main(int argc, char **argv)
    // a Float32 inside a Union32, and return the union
    u = getBits(argv[1], argv[2], argv[3]);
 
-   printf("bits : %s\n", showBits(u.xval,out));
+   // convert Float32 into xval
+   u = convWord(u.bits);
+
+   printf("bits : %s\n", showBits(u.xval, out));
+
+   // convert xval into fval
+   u = convFloat(u.xval);
+
    printf("float: %0.10f\n", u.fval);
 
    return 0;
@@ -57,16 +66,32 @@ int main(int argc, char **argv)
 Union32 getBits(char *sign, char *exp, char *frac)
 {
    Union32 new;
-
-   // this line is just to keep gcc happy
-   // delete it when you have implemented the function
    new.bits.sign = new.bits.exp = new.bits.frac = 0;
 
    // convert char *sign into a single bit in new.bits
+   new.bits.sign = sign[0] - '0';
 
    // convert char *exp into an 8-bit value in new.bits
-
+   for (int i = 0; i < 8; i++) {
+      new.bits.exp |= (unsigned int) (exp[7 - i] - '0') << i;
+   }
    // convert char *frac into a 23-bit value in new.bits
+   for (int i = 0; i < 23; i++) {
+      new.bits.frac |= (unsigned int) (frac[22 - i] - '0') << i;
+   }
+   return new;
+}
+
+Union32 convWord(Float32 bits) {
+   Union32 new;
+   // convert bits into Word and store in xval of new
+
+   return new;
+}
+
+Union32 convFloat(Word xval) {
+   Union32 new;
+   // convert xval into fval and store it in fval of new
 
    return new;
 }
@@ -77,9 +102,7 @@ Union32 getBits(char *sign, char *exp, char *frac)
 // return a pointer to buf
 char *showBits(Word val, char *buf)
 {
-   // this line is just to keep gcc happy
-   // delete it when you have implemented the function
-   buf[0] = '\0';
+   
    return buf;
 }
 

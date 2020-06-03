@@ -7,7 +7,7 @@
 #    scanf("%d", &x);
 #    printf("%s","Second number: ");
 #    scanf("%d", &y);
-#    printf("%d\n", x+y);
+#    printf("%d\n", x-y);
 #    return;
 # }
 
@@ -36,7 +36,7 @@ main:
 
       lw  $t0, x        # reg[t0] = x
       lw  $t1, y        # reg[t1] = y
-      add $a0, $t0, $t1 # reg[a0] = reg[t0] + reg[t1]
+      sub $a0, $t0, $t1 # reg[a0] = reg[t0] - reg[t1]
       li  $v0, 1         
       syscall           # printf("%d", reg[a0])
 
@@ -44,6 +44,7 @@ main:
       li  $v0, 4
       syscall           # printf("%s", eol)
 
-      li  $v0, 0	# set return value to 0
+      li  $v0, 0	      # set return value to 0
       jr  $ra           # return from main
+
 

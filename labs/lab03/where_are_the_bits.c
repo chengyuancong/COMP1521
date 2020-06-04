@@ -11,40 +11,31 @@ struct _bit_fields {
                 c : 20;
 };
 
-union _bits32 {
-   uint32_t xval;
-   struct _bit_fields bits;
-};
-
 int main(void)
 {
    struct _bit_fields x;
-   x.a = 0b1;
-   x.b = 0b1;
-   x.c = 0b1;
+   x.a = 1;
+   x.b = 1;
+   x.c = 1;
 
-   union _bits32 u;
-   u.bits = x;
+   printf("\nSize of x is %lu bytes.\n", sizeof(x));
 
-   printf("Size of x is %lu bytes.\n",sizeof(x));
-   
-   printf("\nc: 00000000000000000001 b: 00000001 a: 0001\n");
-
-   printf("\nPrint abc by uint32_t:\n");
-   for (int i = 0; i < 32; i++) {
-      printf("%d", (u.xval >> (31 - i)) & 1);
+   printf("\nPrint abc as an int:\n");
+   int * ip = (int *) &x;
+   for (int k = 31; k >= 0; k--) {
+      printf("%d", (*ip >> k) & 1);
    }
 
    printf("\n\nPrint abc by bytes:\n");
-   char * p = (char *) &x;
+   char * cp = (char *) &x;
    for (int i = 0; i < sizeof(x); i++) {
       for (int j = 7; j >= 0; j--) {
-         printf("%d", (*p >> j) & 1);
+         printf("%d", (*cp >> j) & 1);
       }
       printf(" ");
-      p++;
+      cp++;
    }
    printf("\n");
-
    return 0;
 }
+

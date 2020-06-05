@@ -16,7 +16,8 @@
 #           printf("The student scored %d%% in this exam.\n",100*mark/max);
 #     goto end;
 # error:
-#           printf("Total mark is wrong.\n");
+#     printf("Total mark is wrong.\n");
+#     goto end;
 # end:
 #     return 0;
 # }
@@ -41,7 +42,7 @@ main:
       sw    $v0, max           # max = reg[v0]
 
       lw    $t0, max           # reg[t0] = max
-      beq   $t0, 0, wrong      # if (max == 0) goto wrong
+      beqz  $t0, wrong         # if (max == 0) goto wrong
 
       la    $a0, ask_mark      # reg[a0] = ask_mark
       li    $v0, 4
@@ -66,12 +67,13 @@ main:
       li    $v0, 4
       syscall                  # printf("% in this exam.\n")
 
-      b     end                # goto end
+      j     end                # goto end
 
 wrong:
       la    $a0, error         # reg[a0] = error
       li    $v0, 4 
-      syscall                  # printf("Error: Total mark should be larger than 0.\n")           
+      syscall                  # printf("Error: Total mark should be larger than 0.\n")
+      j     end                # goto end
 
 end:    
       li  $v0, 0               # set return value to 0

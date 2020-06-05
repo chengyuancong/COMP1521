@@ -1,27 +1,27 @@
 # weather.s
 
-#int main(void){
-#    int temp;
-#    int difference;
-#    printf("Enter the temperature: ");
-#    scanf("%d",&temp);
-#    if( temp > 25 ){
-#        difference = temp - 25;
-#        printf("I wish it was %d degrees cooler.\n",difference);
-#        if(temp >= 40){
-#            printf("It is boiling!\n");
-#        }
-#    } else if ( temp < 25){
-#        difference = 25 - temp;
-#        printf("I wish it was %d degrees warmer.\n",difference);
-#        if(temp <= 10){
-#            printf("I am freezing!\n");
-#        }
-#    } else {
-#        printf("Nice weather we are having.\n");
-#   } 
-#    return 0;
-#}
+# int main(void){
+#     int temp;
+#     int difference;
+#     printf("Enter the temperature: ");
+#     scanf("%d", &temp);
+#     if (temp > 25) {
+#         difference = temp - 25;
+#         printf("I wish it was %d degrees cooler.\n", difference);
+#         if (temp >= 40) {
+#             printf("It is boiling!\n");
+#         }
+#     } else if (temp < 25) {
+#         difference = 25 - temp;
+#         printf("I wish it was %d degrees warmer.\n", difference);
+#         if (temp <= 10) {
+#             printf("I am freezing!\n");
+#         }
+#     } else {
+#         printf("Nice weather we are having.\n");
+#     } 
+#     return 0;
+# }
 
 
 ### Global data
@@ -55,64 +55,66 @@ main:
 
    li    $v0, 5
    syscall                  # scanf("%d", into $v0)
-   move $s0, $v0            # store temp in $s0
+   move  $s0, $v0           # store temp in $s0
 
 if_start:
-   li $t0, 25               # store constant 25 in $t0
-   blt $s0, $t0, too_cold
-   beq $s0, $t0, just_right
+   li    $t0, 25            # store constant 25 in $t0
+   blt   $s0, $t0, too_cold
+   beq   $s0, $t0, just_right
 
-   li    $v0, 4             #printf("I wish it was ");
+   li    $v0, 4             # printf("I wish it was ");
    la    $a0, wishes_msg
    syscall
 
-   sub $s0, $s0, $t0        #diff = $t1 = $s0 - $t0
+   sub   $t1, $s0, $t0      # diff = $t1 = $s0 - $t0
    
-   li $v0, 1                #printf("%d",$t1);
-   move $a0, $t1   
+   li    $v0, 1             # printf("%d",$s0);
+   move  $a0, $t1   
    syscall
 
-   li    $b0, 4             #printf(" degrees cooler\n");
+   li    $v0, 4             # printf(" degrees cooler\n");
    la    $a0, cooler_msg
    syscall
   
    li    $t0, 40            # store constant 40 in $t0
-   ble   $s0, $t0 end_if
+   blt   $s0, $t0, end_if
    
-   li    $v0, 4             #printf("I am boiling\n");
+   li    $v0, 4             # printf("I am boiling\n");
    la    $a0, boiling_msg
    syscall
   
-   j end_if
+   j     end_if
+
 too_cold:
 
-   li    $v0, 4             #printf("I wish it was ");
+   li    $v0, 4             # printf("I wish it was ");
    la    $a0, wishes_msg
    syscall
 
-   sub $t1, $t0, $s0        #diff = $t1 = $t0 - $s0
+   sub   $t1, $t0, $s0      # diff = $t1 = $t0 - $s0
 
-   li $v0, 1                #printf("%d",$t1);
-   move $a0, $t1   
+   li    $v0, 1             # printf("%d",$t1);
+   move  $a0, $t1   
    syscall
 
    li    $v0, 4
    la    $a0, warmer_msg
    syscall
 
-   j end_if
-
    li    $t0, 10            # store constant 10 in $t0
-   bgt $s0, $t0 end_if
+   bgt   $s0, $t0, end_if
    
-   li    $v0, 4             #printf("I am freezing\n");
+   li    $v0, 4             # printf("I am freezing\n");
    la    $a0, freezing_msg
    syscall
+
+   j     end_if
 
 just_right:
 
    li    $v0, 4
-   la    $a0, nice_msg      #printf("Nice weather we are having.\n");
+   la    $a0, nice_msg      # printf("Nice weather we are having.\n");
+   syscall
 
 end_if:
 

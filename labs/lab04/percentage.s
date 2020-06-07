@@ -10,14 +10,13 @@
 # int main(void){
 #     printf("Enter the total number of marks in the exam: ");
 #     scanf("%d",&max);
-#     if (max == 0) goto error;
-#           printf("Enter the number of marks the student was awarded: ");
-#           scanf("%d",&mark);
+#     printf("Enter the number of marks the student was awarded: ");
+#     scanf("%d",&mark);
+#     if (max == 0) goto wrong;
 #           printf("The student scored %d%% in this exam.\n",100*mark/max);
 #     goto end;
-# error:
-#     printf("Total mark is wrong.\n");
-#     goto end;
+# wrong:
+#     printf("Error: Total mark should be larger than 0.\n");
 # end:
 #     return 0;
 # }
@@ -41,9 +40,6 @@ main:
       syscall                  # scanf("%d", &max)
       sw    $v0, max           # max = reg[v0]
 
-      lw    $t0, max           # reg[t0] = max
-      beqz  $t0, wrong         # if (max == 0) goto wrong
-
       la    $a0, ask_mark      # reg[a0] = ask_mark
       li    $v0, 4
       syscall                  # printf("Enter the number of marks the student was awarded: ")
@@ -51,11 +47,13 @@ main:
       syscall                  # scanf("%d", &mark)
       sw    $v0, mark          # mark = reg[v0]
 
+      lw    $t0, max           # reg[t0] = max
+      beqz  $t0, wrong         # if (max == 0) goto wrong
+
       lw    $t0, mark          # reg[t0] = mark
       mul   $t0, $t0, 100      # reg[t0] = mark * 100
       lw    $t1, max           # reg[t1] = max
       div   $t0, $t0, $t1      # reg[t0] = (100 * mark) / max
-
 
       la    $a0, result_1      # reg[a0] = result_1
       li    $v0, 4
@@ -73,7 +71,6 @@ wrong:
       la    $a0, error         # reg[a0] = error
       li    $v0, 4 
       syscall                  # printf("Error: Total mark should be larger than 0.\n")
-      j     end                # goto end
 
 end:    
       li  $v0, 0               # set return value to 0

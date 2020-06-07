@@ -57,7 +57,6 @@ zero:
    la    $a0, zero_msg 
    li    $v0, 4
    syscall                  # printf("You have entered zero.\n")
-   j     end                # goto end
 
 end:
    li    $v0, 0

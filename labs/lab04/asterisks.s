@@ -37,10 +37,10 @@ main:
    syscall                  # scanf("%d", into $v0)
    move  $s0, $v0           # store n in $s0
 
-   li    $t0, 0             # i = 0
+   li    $s1, 0             # $s1 = i = 0
 
 loop:
-   bge   $t0, $s0, end       # if (i >= n) goto end
+   bge   $s1, $s0, end       # if (i >= n) goto end
 
    la    $a0, asterisk 
    li    $v0, 4
@@ -49,7 +49,7 @@ loop:
    li    $v0, 4
    syscall                  # printf("\n")
 
-   add   $t0, $t0, 1        # i++
+   addi  $s1, $s1, 1        # i++
    j     loop
 
 end:

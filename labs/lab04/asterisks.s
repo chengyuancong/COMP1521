@@ -40,7 +40,7 @@ main:
    li    $s1, 0             # $s1 = i = 0
 
 loop:
-   bge   $s1, $s0, end       # if (i >= n) goto end
+   bge   $s1, $s0, end      # if (i >= n) goto end
 
    la    $a0, asterisk 
    li    $v0, 4

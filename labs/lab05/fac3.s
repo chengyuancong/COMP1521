@@ -71,12 +71,12 @@ fac:
 
    # code for recursive fac()
    move  $s0, $a0           # store n in $s0
-   ble   $s0, 1, recEnd     # if (n <= 1) goto 
+   ble   $s0, 1, return_1   # if (n <= 1) goto return_1
    sub   $a0, $a0, 1        # n = n - 1
    jal   fac                # fac(n - 1)
    mul   $v0, $v0, $s0      # n * fac(n - 1)
 
-Return:
+return:
    # clean up stack frame
    lw    $s0, -8($fp)       # restore $s0 value
    lw    $ra, -4($fp)       # restore $ra for return
@@ -85,6 +85,6 @@ Return:
 
    jr    $ra                # return tmp;
 
-recEnd:
+return_1:
    li    $v0, 1             # store 1 in $v0
-   j     Return          # back to last call
+   j     return             # back to last call

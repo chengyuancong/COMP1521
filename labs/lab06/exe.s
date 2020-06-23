@@ -1,16 +1,3 @@
-# CP1521 
-# Matrix data
-
-   .data
-N:
-   .word   3
-m:
-   .word   1, 0, 0
-   .word   0, 1, 0
-   .word   0, 0, 1
-
-   .align  2
-
 # main program + show function
 
    .data
@@ -140,6 +127,7 @@ end_show_matrix_loop1:
    .text
    .globl is_ident
 
+
 # int is_ident(m, N)
 # params: m=$a0, N=$a1
 # locals: m=$s0, N=$s1, row=$s2, col=$s3
@@ -158,17 +146,16 @@ is_ident:
    sw   $s2, ($sp)
    addi $sp, $sp, -4
    sw   $s3, ($sp)
-   # if you need to save more than four $s? registers
-   # add extra code here to save them on the stack
 
-   li   $v0, 1            # $v0 = 1
    move $s0, $a0          # $s0 = *m
    move $s1, $a1          # $s1 = N
    li   $s2, 0            # $s2 = row = 0
+
 is_ident_loop1:
    bge  $s2, $s1, end_is_ident_loop1
 
    li   $s3, 0            # $s3 = col = 0
+
 is_ident_loop2:
    bge  $s3, $s1, end_is_ident_loop2
 
@@ -178,18 +165,23 @@ is_ident_loop2:
    li   $t1, 4
    mul  $t0, $t0, $t1
    add  $t0, $t0, $s0
-   lw   $t0, ($t0)
+   lw   $t0, ($t0)        # $t0 = m[row][col]
 
+if:
    bne  $s2, $s3, else    # if (row != col) goto else
 
-   beq  $t0, 1, return_1  # if (m[row][col] == 1) return 1
-   li   $v0, 0            # return 0
+   bne  $t0, 1, return_0  # if (m[row][col] != 1) return 0
+   j    rest_loop2
 
 else:
-   beq  $t0, 0, return_1  # if (m[row][col] == 0) return 1;
-   li   $v0, 0            # return 0
+   bne  $t0, 0, return_0  # if (m[row][col] != 0) return 0
+   j    rest_loop2
 
-return_1:
+return_0:
+   li   $v0, 0            # return 0
+   j    end
+
+rest_loop2:
    addi $s3, $s3, 1       # col++
    j    is_ident_loop2
 
@@ -198,9 +190,10 @@ end_is_ident_loop2:
    j    is_ident_loop1
 
 end_is_ident_loop1:
+   li   $v0, 1            # return 1
+
+end:
 # epilogue
-   # if you saved more than four $s? registers
-   # add extra code here to restore them
    lw   $s3, ($sp)
    addi $sp, $sp, 4
    lw   $s2, ($sp)
@@ -214,4 +207,22 @@ end_is_ident_loop1:
    lw   $fp, ($sp)
    addi $sp, $sp, 4
    j    $ra
+# COMP1521 18s1 Exam Q1
+# Matrix data
+
+   .data
+N:
+   .word   9
+m:
+   .word   1, 0, 0, 0, 0, 0, 0, 0, 0
+   .word   0, 1, 0, 0, 0, 0, 0, 0, 0
+   .word   0, 0, 1, 0, 0, 0, 0, 0, 0
+   .word   0, 0, 0, 1, 0, 0, 0, 0, 0
+   .word   0, 0, 0, 0, 1, 0, 0, 0, 0
+   .word   0, 0, 0, 0, 0, 1, 0, 0, 0
+   .word   0, 0, 0, 0, 0, 0, 1, 0, 0
+   .word   0, 0, 0, 0, 0, 0, 0, 1, 0
+   .word   0, 0, 0, 0, 0, 0, 0, 0, 1
+
+   .align  2
 

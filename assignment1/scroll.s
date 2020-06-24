@@ -71,15 +71,15 @@ bigString:	.space	81000	# NROWS * NSCOLS
 	.text
 main:
 
-# Frame:	$fp, $ra, ...
-# Uses:		$a0, $a1, $t0, $t1, $t2, $s0, $s1
-# Clobbers:	...
+# Frame:	$fp, $ra
+# Uses:		$a0, $a1, $t0, $t1, $t2, $s0, $s1, $s2
+# Clobbers:	$v0
 
 # Locals:
 #	- `theLength' in $s0
 #	- `bigLength' in $s1
 #	- `ch' in $s2
-#	- `str' in $t2
+#	- `s' in $t2
 #	- `i' in $...
 #	- `j' in $...
 #	- `row' in $...
@@ -446,22 +446,58 @@ delay__post:
 	.text
 isUpper:
 
-# Frame:	$fp, $ra, ...
-# Uses:		$a0, ...
-# Clobbers:	$v0, ...
+# Frame:	$fp, $ra
+# Uses:		$a0
+# Clobbers:	$v0
 
 # Locals:
-#	- ...
+#	- `ch' in $a0
+#   - $v0 used as temporary register
 
 # Structure:
 #	isUpper
 #	-> [prologue]
+#   [ch cond]
+#	   | isUpper_ch_ge_A
+#	   | isUpper_ch_le_Z
+#      | isUpper_ch_lt_A
+#      | isUpper_ch_gt_Z
+#   -> isUpper_ch_phi
 #	-> [epilogue]
 
 # Code:
 	# set up stack frame
-	# ... TODO ...
+	sw  $fp, -4($sp)
+	la  $fp, -4($sp)
+	sw	$ra, -4($fp)
+	la  $sp, -4($fp)
+
+	# if (ch >= 'A')
+	li	$v0, 'A'
+	blt	$a0, $v0, isUpper_ch_lt_A
+	nop # in delay slot
+isUpper_ch_ge_A:
+	# if (ch <= 'z')
+	li	$v0, 'Z'
+	bgt	$a0, $v0, isUpper_ch_gt_Z
+	nop # in delay slot
+isUpper_ch_le_Z:
+	li	$v0, 1
+	j   isUpper_ch_phi
+	nop # in delay slot
+
+	# else
+isUpper_ch_lt_A:
+isUpper_ch_gt_Z:
+	li	$v0, 0
+	# fallthrough
+isUpper_ch_phi:
+
+isUpper_post:
 	# tear down stack frame
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
 	jr	$ra
 	nop	# in delay slot
 
@@ -476,7 +512,7 @@ isLower:
 
 # Locals:
 #	- `ch' in $a0
-#	- ... $v0 used as temporary register
+#	- $v0 used as temporary register
 
 # Structure:
 #	isLower
@@ -494,7 +530,7 @@ isLower:
 	sw	$fp, -4($sp)
 	la	$fp, -4($sp)
 	sw	$ra, -4($fp)
-	la	$sp, -8($fp)
+	la	$sp, -4($fp)
 
 	# if (ch >= 'a')
 	li	$v0, 'a'
@@ -506,18 +542,18 @@ isLower_ch_ge_a:
 	bgt	$a0, $v0, isLower_ch_gt_z
 	nop	# in delay slot
 isLower_ch_le_z:
-	addi	$v0, $zero, 1
+	li	$v0, 1
 	j	isLower_ch_phi
 	nop	# in delay slot
 
-	# ... else
+	# else
 isLower_ch_lt_a:
 isLower_ch_gt_z:
-	move	$v0, $zero
+	li	$v0, 0
 	# fallthrough
 isLower_ch_phi:
 
-isLower__post:
+isLower_post:
 	# tear down stack frame
 	lw	$ra, -4($fp)
 	la	$sp, 4($fp)

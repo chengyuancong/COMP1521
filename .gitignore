@@ -1,14 +1,14 @@
 # ignore all
 *
 
-# except files with specific extentions
+# except files with specific names or extensions
 !*.c
 !*.h
 !*.s
 !*.txt
 !*.md
-!*.gitignore
-!*Makefile
+!.gitignore
+!Makefile
 
 # except all dirs
 !*/

@@ -146,8 +146,6 @@ is_ident:
    sw   $s2, ($sp)
    addi $sp, $sp, -4
    sw   $s3, ($sp)
-   # if you need to save more than four $s? registers
-   # add extra code here to save them on the stack
 
    move $s0, $a0          # $s0 = *m
    move $s1, $a1          # $s1 = N
@@ -196,8 +194,6 @@ end_is_ident_loop1:
 
 end:
 # epilogue
-   # if you saved more than four $s? registers
-   # add extra code here to restore them
    lw   $s3, ($sp)
    addi $sp, $sp, 4
    lw   $s2, ($sp)

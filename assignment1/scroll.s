@@ -309,7 +309,7 @@ main_bigstring_is_space_col_post:
 	addi	$t1, $t1, 1		# row++
 	j	main_bigstring_is_space_row
 main_bigstring_is_space_row_post:
-
+	j	main_bigstring_not_space_row_post
 main_bigstring_not_space:	# else
 	move	$a0, $s2
 	jal	isUpper
@@ -408,16 +408,15 @@ main__post:
 	.text
 setUpDisplay:
 
-# Frame:	$fp, $ra, ...
-# Uses:		$a0, $a1, ...
-# Clobbers:	...
+# Frame:	$fp, $ra
+# Uses:		$a0, $a1, $s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4
+# Clobbers:	$s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4
 
 # Locals:
-#	- `row' in $...
-#	- `out_col' in $...
-#	- `in_col' in $...
-#	- `first_col' in $...
-#	- ...
+#	- `row' in $s0
+#	- `out_col' in $s1
+#	- `in_col' in $s2
+#	- `first_col' in $s3
 
 # Structure:
 #	setUpDisplay
@@ -430,11 +429,68 @@ setUpDisplay:
 	sw	$fp, -4($sp)
 	la	$fp, -4($sp)
 	sw	$ra, -4($fp)
-	la	$sp, -8($fp)
+	sw	$s0, -8($fp)
+	sw	$s1, -12($fp)
+	sw	$s2, -16($fp)
+	sw	$s3, -20($fp)
+	addi	$sp, $sp, -24
 
-	# ... TODO ...
+	la	$t0, NROWS
+	lw	$t0, ($t0)			# $t0 = NROWS
+	la	$t1, NDCOLS
+	lw	$t1, ($t1)			# $t1 = NDCOLS
 
+	bgez	$a0, setUpDisplay_else
+	li	$s1, 0				# $s1 = out_col = 0
+	sub	$s3, $zero, $a0		# $s3 = first_col = -starting
+	j	setUpDisplay_else_post
+setUpDisplay_else:
+	li	$s1, 0				# $s1 = out_col = 0
+setUpDisplay_else_out_col:
+	bge $s1, $a0, setUpDisplay_else_out_col_post
+	li	$s0, 0				# $s0 = row = 0
+setUpDisplay_else_row:
+	bge $s0, $t0, setUpDisplay_else_row_post
+	mul	$t2, $s0, $t1		# row * NDCOLS
+	add	$t2, $t2, $s1		# $t2 = offset = row * NDCOLS + out_col
+	li	$t3, ' '			# $t3 = ' '
+	sb	$t3, display($t2)	# display[row][out_col] = ' '
+	addi	$s0, $s0, 1		# row++
+	j	setUpDisplay_else_row
+setUpDisplay_else_row_post:
+	addi	$s1, $s1, 1		# out_col++
+	j	setUpDisplay_else_out_col
+setUpDisplay_else_out_col_post:
+	li	$s3, 0				# $s3 = first_col = 0
+setUpDisplay_else_post:
+
+	# copy the relevant bits of the bigString into the display
+	move	$s2, $s3		# in_col = first_col
+setUpDisplay_copy_in_col:
+	bge	$s2, $a1, setUpDisplay_copy_in_col_post
+	# if (out_col >= NDCOLS) break;
+	bge $s1, $t1, setUpDisplay_copy_in_col_post
+	li	$s0, 0				# $s0 = row = 0
+setUpDisplay_copy_row:
+	bge	$s0, $t0, setUpDisplay_copy_row_post
+	mul	$t2, $s0, $t1		# row * NDCOLS
+	add $t2, $t2, $s1		# $t2 = offset_1 = row * NDCOLS + out_col
+	mul	$t3, $s0, $a1		# row * length
+	add $t3, $t3, $s2		# $t3 = offset_2 = row * length + in_col
+	lb	$t4, bigString($t3)	# $t4 = bigString[row][in_col]
+	sb	$t4, display($t2)	# display[row][out_col] = bigString[row][in_col]
+	addi	$s0, $s0, 1		# row++
+	j	setUpDisplay_copy_row
+setUpDisplay_copy_row_post:
+	addi	$s1, $s1, 1		# out_col++
+	addi	$s2, $s2, 1		# in_col++
+	j	setUpDisplay_copy_in_col
+setUpDisplay_copy_in_col_post:
 	# tear down stack frame
+	lw	$s3, -20($fp)
+	lw	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw	$s0, -8($fp)
 	lw	$ra, -4($fp)
 	la	$sp, 4($fp)
 	lw	$fp, ($fp)
@@ -446,14 +502,13 @@ setUpDisplay:
 	.text
 showDisplay:
 
-# Frame:	$fp, $ra, ...
-# Uses:		...
-# Clobbers:	...
+# Frame:	$fp, $ra
+# Uses:		$s0, $s1, $t0, $t1, $t2
+# Clobbers:	$t0, $t1, $t2
 
 # Locals:
-#	- `i' in $...
-#	- `j' in $...
-#	- ...
+#	- `i' in $s0
+#	- `j' in $s1
 
 # Structure:
 #	showDisplay
@@ -466,11 +521,42 @@ showDisplay:
 	sw	$fp, -4($sp)
 	la	$fp, -4($sp)
 	sw	$ra, -4($fp)
-	la	$sp, -8($fp)
+	sw	$s0, -8($fp)
+	sw	$s1, -12($fp)
+	addi	$sp, $sp, -16
 
+	la	$a0, CLEAR
+	li	$v0, 4
+	syscall					# printf(CLEAR)
 
+	la	$t0, NROWS
+	lw	$t0, ($t0)			# $t0 = NROWS
+	la	$t1, NDCOLS
+	lw	$t1, ($t1)			# $t1 = NDCOLS
 
+	li	$s0, 0				# $s0 = i = 0
+showDisplay_row:
+	bge	$s0, $t0, showDisplay_row_post
+	li	$s1, 0				# $s1 = j = 0
+showDisplay_col:
+	bge $s1, $t1, showDisplay_col_post
+	mul	$t2, $s0, $t1		# i * NDCOLS
+	add $t2, $t2, $s1		# $t2 = offset = i * NDCOLS + j
+	lb	$a0, display($t2)
+	li	$v0, 11
+	syscall					# putchar(display[i][j])
+	addi	$s1, $s1, 1		# j++
+	j	showDisplay_col
+showDisplay_col_post:
+	li	$a0, '\n'
+	li	$v0, 11
+	syscall					# putchar('\n')
+	addi	$s0, $s0, 1		# i++
+	j	showDisplay_row
+showDisplay_row_post:
 	# tear down stack frame
+	lw	$s1, -12($fp)
+	lw	$s0, -8($fp)
 	lw	$ra, -4($fp)
 	la	$sp, 4($fp)
 	lw	$fp, ($fp)

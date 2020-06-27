@@ -72,7 +72,7 @@ bigString:	.space	81000	# NROWS * NSCOLS
 main:
 
 # Frame:	$fp, $ra
-# Uses:		$a0, $a1, $t0, $t1, $t2, $s0, $s1, $s2
+# Uses:		$a0, $a1, $t0, $t1, $t2, $t3, $t4, $t5, $s0, $s1, $s2, $s3, $s4
 # Clobbers:	$v0
 
 # Locals:
@@ -80,12 +80,12 @@ main:
 #	- `bigLength' in $s1
 #	- `ch' in $s2
 #	- `s' in $t2
-#	- `i' in $...
-#	- `j' in $...
-#	- `row' in $...
-#	- `col' in $...
-#	- `iterations' in $...
-#	- `startingCol' in $...
+#	- `i' in $t0
+#	- `j' in $t2
+#	- `row' in $t1
+#	- `col' in $t2
+#	- `iterations' in $s3
+#	- `starting_col' in $s4
 
 # Structure:
 #	main
@@ -114,7 +114,9 @@ main:
 	sw	$s0, -8($fp)
 	sw	$s1, -12($fp)
 	sw	$s2, -16($fp)
-	addi	$sp, $sp, -20
+	sw	$s3, -20($fp)
+	sw  $s4, -24($fp)
+	addi	$sp, $sp, -28
 
 	# if (argc < 2)
 	li	$t0, 2
@@ -251,12 +253,98 @@ main_theLength_lt_1:
 	nop	# in delay slot
 main_theLength_ge_1:
 
-	# ... TODO ...
+	# initialise the display to all spaces
+	la	$t1, NROWS
+	lw	$t1, ($t1)			# $t1 = NROWS
+	la	$t3, NDCOLS
+	lw	$t3, ($t3)			# $t3 = NDCOLS
+	li	$t0, 0				# $t0 = i = 0
+main_display_nrows:
+	bge	$t0, $t1, main_display_nrows_post
+	li	$t2, 0				# $t2 = j = 0
+main_display_ndcols:
+	bge	$t2, $t3, main_display_ndcols_post
+	mul	$t4, $t0, $t3		# $t4 = i * NDCOLS
+	add $t4, $t4, $t2		# offset = $t4 = i * NDCOLS + j
+	sb	' ', display($t4)	# display[i][j] = ' '
+	addi	$t2, $t2, 1		# j++
+	j	main_display_ndcols
+main_display_ndcols_post:
+	addi	$t0, $t0, 1		# i++
+	j	main_display_nrows
+main_display_nrows_post:
 
+	# creat the bigchars array
+	li	$t0, 0				# $t0 = i = 0
+main_bigstring:
+	bge	$t0, $s0, main_bigstring_post
+	lb	$s2, theString($t0) # $s2 = ch = theString[i]
+
+main_bigstring_is_space:	# if (ch == ' ')
+	li	$t3, ' '			# $t3 = ' '
+	bne	$s2, $t3, main_bigstring_not_space
+
+	la	$t3, CHRSIZE
+	lw	$t3, ($t3)			# $t3 = CHRSIZE
+	li	$t1, 0				# $t1 = row = 0
+main_bigstring_is_space_row:
+
+main_bigstring_is_space_col:
+
+main_bigstring_is_space_col_post:
+
+main_bigstring_is_space_row_post:
+
+
+main_bigstring_not_space:	# else
+	move	$a0, $s2
+	jal	isUpper
+	li	$t3, 1
+	bne	$v0, $t3, main_bigstring_not_upper
+main_bigstring_isUpper:
+	sub $s3, $s2, 'A'		# which = ch - 'A'
+main_bigstring_not_upper:
+	jal	isLower
+	bne $v0, $t3, main_bigstring_not_lower
+main_bigstring_isLower:
+	sub $s3, $s2, 'a'		
+	addi	$s3, $s3, 26	# which = ch - 'a' + 26
+main_bigstring_not_lower:
+
+	la	$t3, CHRSIZE
+	lw	$t3, ($t3)			# $t3 = CHRSIZE
+	li	$t1, 0				# $t1 = row = 0
+main_bigstring_not_space_row:
+
+main_bigstring_not_space_col:
+
+							# col++
+	j
+main_bigstring_not_space_col_post:
+
+							# row++
+	j
+main_bigstring_not_space_row_post:
+							# col = 
+	li	$t1, 0				# $t1 = row = 0
+main_bigstring_fill_gap:
+
+							# row++
+	j
+main_bigstring_fill_gap_post:
+	addi	$t0, $t0, 1		# i++
+	j	main_bigstring
+main_bigstring_post:
+
+main_show:
+
+main_show_post:
 	# return 0
 	move	$v0, $zero
 main__post:
 	# tear down stack frame
+	lw  $s4, -24($fp)
+	lw	$s3, -20($fp)
 	lw	$s2, -16($fp)
 	lw	$s1, -12($fp)
 	lw	$s0, -8($fp)
@@ -331,7 +419,7 @@ showDisplay:
 	sw	$ra, -4($fp)
 	la	$sp, -8($fp)
 
-	# ... TODO ...
+
 
 	# tear down stack frame
 	lw	$ra, -4($fp)
@@ -477,7 +565,7 @@ isUpper:
 	blt	$a0, $v0, isUpper_ch_lt_A
 	nop # in delay slot
 isUpper_ch_ge_A:
-	# if (ch <= 'z')
+	# if (ch <= 'Z')
 	li	$v0, 'Z'
 	bgt	$a0, $v0, isUpper_ch_gt_Z
 	nop # in delay slot

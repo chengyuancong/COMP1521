@@ -72,7 +72,8 @@ bigString:	.space	81000	# NROWS * NSCOLS
 main:
 
 # Frame:	$fp, $ra
-# Uses:		$a0, $a1, $t0, $t1, $t2, $t3, $t4, $t5, $s0, $s1, $s2, $s3, $s4
+# Uses:		$a0, $a1, $t0, $t1, $t2, $t3, $t4, $t5, $t6, $t7, 
+#           $s0, $s1, $s2, $s3, $s4
 # Clobbers:	$v0
 
 # Locals:
@@ -266,7 +267,8 @@ main_display_ndcols:
 	bge	$t2, $t3, main_display_ndcols_post
 	mul	$t4, $t0, $t3		# $t4 = i * NDCOLS
 	add $t4, $t4, $t2		# offset = $t4 = i * NDCOLS + j
-	sb	' ', display($t4)	# display[i][j] = ' '
+	li	$t5, ' '			
+	sb	$t5, display($t4)	# display[i][j] = ' '
 	addi	$t2, $t2, 1		# j++
 	j	main_display_ndcols
 main_display_ndcols_post:
@@ -281,20 +283,32 @@ main_bigstring:
 	lb	$s2, theString($t0) # $s2 = ch = theString[i]
 
 main_bigstring_is_space:	# if (ch == ' ')
-	li	$t3, ' '			# $t3 = ' '
-	bne	$s2, $t3, main_bigstring_not_space
+	bne	$s2, $t5, main_bigstring_not_space
 
 	la	$t3, CHRSIZE
 	lw	$t3, ($t3)			# $t3 = CHRSIZE
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_is_space_row:
-
+	bge	$t1, $t3, main_bigstring_is_space_row_post
+	li	$t2, 0				# $t2 = col = 0
 main_bigstring_is_space_col:
+	bge	$t2, $t3, main_bigstring_is_space_col_post
 
+	# bigString[row][col + i * (CHRSIZE+1)] = ' '
+	addi	$t4, $t3, 1		# CHRSIZE + 1
+	mul	$t4, $t4, $t0		# i * (CHRSIZE + 1)
+	add $t4, $t4, $t2		# col + i * (CHRSIZE + 1)
+	mul	$t5, $t1, $s1		# row * bigLength
+	add $t4, $t4, $t5		# offset = row * bigLength + col + i * (CHRSIZE+1)
+	li	$t6, ' '
+	sb	$t6, bigString($t4)	# bigString[row][col + i * (CHRSIZE+1)] = ' '
+
+	addi	$t2, $t2, 1		# col++
+	j	main_bigstring_is_space_col
 main_bigstring_is_space_col_post:
-
+	addi	$t1, $t1, 1		# row++
+	j	main_bigstring_is_space_row
 main_bigstring_is_space_row_post:
-
 
 main_bigstring_not_space:	# else
 	move	$a0, $s2
@@ -315,29 +329,64 @@ main_bigstring_not_lower:
 	lw	$t3, ($t3)			# $t3 = CHRSIZE
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_not_space_row:
-
+	bge	$t1, $t3, main_bigstring_not_space_row_post
+	li	$t2, 0				# $t2 = col = 0
 main_bigstring_not_space_col:
+	bge	$t2, $t3, main_bigstring_not_space_col_post
 
-							# col++
-	j
+	# bigString[row][col + i * (CHRSIZE+1)] = all_chars[which][row][col]
+	addi	$t4, $t3, 1		# CHRSIZE + 1
+	mul	$t4, $t4, $t0		# i * (CHRSIZE + 1)
+	add $t4, $t4, $t2		# col + i * (CHRSIZE + 1)
+	mul	$t5, $t1, $s1		# row * bigLength
+	add $t4, $t4, $t5		# $t4 = offset_1 
+	mul $t5, $t3, $t3		# CHRSIZE * CHRSIZE
+	mul	$t5, $t5, $s3		# which * CHRSIZE * CHRSIZE
+	mul	$t6, $t1, $t3		# row * CHRSIZE
+	add	$t5, $t5, $t6		# which * CHRSIZE * CHRSIZE + row * CHRSIZE
+	add $t5, $t5, $t2		# $t5 = offset_2
+	lb	$t6, all_chars($t5)	# $t6 = all_chars[which][row][col]
+	sb	$t6, bigString($t4)	# bigString[row][col + i * (CHRSIZE+1)] = $t6
+
+	addi	$t2, $t2, 1		# col++
+	j	main_bigstring_not_space_col
 main_bigstring_not_space_col_post:
-
-							# row++
-	j
+	addi	$t1, $t1, 1		# row++
+	j	main_bigstring_not_space_row
 main_bigstring_not_space_row_post:
-							# col = 
+	addi	$t2, $t3, 1		# CHRSIZE+1
+	mul	$t2, $t2, $t0		# i * (CHRSIZE+1)
+	add $t2, $t2, $t3		# col = (i * (CHRSIZE+1)) + CHRSIZE
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_fill_gap:
-
-							# row++
-	j
+	bge	$t1, $t3, main_bigstring_fill_gap_post
+	mul	$t4, $t1, $s1		# row * bigLength
+	add $t4, $t4, $t2		# $t4 = offset = row * bigLength + col
+	li	$t5, ' '
+	sb	$t5, bigString($t4)	# bigString[row][col] = ' '
+	addi	$t1, $t1, 1
+	j	main_bigstring_fill_gap
 main_bigstring_fill_gap_post:
 	addi	$t0, $t0, 1		# i++
 	j	main_bigstring
 main_bigstring_post:
 
+	la	$s2, NDCOLS
+	lw	$s2, ($s2)			# $s2 = NDCOLS
+	add $s3, $s2, $s1		# $s3 = iterations = NDCOLS + bigLength
+	sub	$s4, $s2, 1			# $s4 = NDCOLS - 1
+	li	$s0, 0				# $s0 = i = 0
 main_show:
-
+	bge	$s0, $s3, main_show_post
+	move 	$a0, $s4
+	move	$a1, $s1
+	jal	setUpDisplay		# setUpDisplay(starting_col, bigLength)
+	jal	showDisplay			# showDisplay()
+	sub	$s4, $s4, 1			# starting_col--
+	li	$a0, 1
+	jal	delay				# delay(1)
+	addi	$s0, $s0, 1		# i++
+	j	main_show
 main_show_post:
 	# return 0
 	move	$v0, $zero

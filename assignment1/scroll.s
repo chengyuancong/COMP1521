@@ -104,7 +104,33 @@ main:
 #	  | main_theLength_lt_MAXCHARS
 #	  | main_theLength_lt_1
 #	  | main_theLength_ge_1
-#	...
+#	-> main_init_display_nrows
+#		-> main_init_display_ndcols
+#		-> main_init_display_ndcols_post
+# 	-> main_init_display_nrows_post
+# 	-> main_bigstring
+#		-> main_bigstring_is_space
+#			-> main_bigstring_is_space_row
+#				-> main_bigstring_is_space_col
+#				-> main_bigstring_is_space_col_post
+#			-> main_bigstring_is_space_row_post
+#		-> main_bigstring_not_space
+#			-> main_bigstring_isUpper
+#			-> main_bigstring_not_upper
+#			-> main_bigstring_isLower
+#			-> main_bigstring_not_lower
+#			-> main_bigstring_not_space_row
+#				-> main_bigstring_not_space_col
+#				-> main_bigstring_not_space_col_post
+#			-> main_bigstring_not_space_row_post
+#		-> main_bigstring_fill_gap
+#		-> main_bigstring_post
+#	-> main_show
+#		-> setUpDisplay
+#		-> showDisplay
+#		-> delay
+#	-> main_show_post
+#	-> main__post
 #	-> [epilogue]
 
 # Code:
@@ -260,21 +286,21 @@ main_theLength_ge_1:
 	la	$t3, NDCOLS
 	lw	$t3, ($t3)			# $t3 = NDCOLS
 	li	$t0, 0				# $t0 = i = 0
-main_display_nrows:
-	bge	$t0, $t1, main_display_nrows_post
+main_init_display_nrows:
+	bge	$t0, $t1, main_init_display_nrows_post
 	li	$t2, 0				# $t2 = j = 0
-main_display_ndcols:
-	bge	$t2, $t3, main_display_ndcols_post
+main_init_display_ndcols:
+	bge	$t2, $t3, main_init_display_ndcols_post
 	mul	$t4, $t0, $t3		# $t4 = i * NDCOLS
 	add $t4, $t4, $t2		# offset = $t4 = i * NDCOLS + j
 	li	$t5, ' '			
 	sb	$t5, display($t4)	# display[i][j] = ' '
 	addi	$t2, $t2, 1		# j++
-	j	main_display_ndcols
-main_display_ndcols_post:
+	j	main_init_display_ndcols
+main_init_display_ndcols_post:
 	addi	$t0, $t0, 1		# i++
-	j	main_display_nrows
-main_display_nrows_post:
+	j	main_init_display_nrows
+main_init_display_nrows_post:
 
 	# creat the bigchars array
 	li	$t0, 0				# $t0 = i = 0
@@ -371,10 +397,11 @@ main_bigstring_fill_gap_post:
 	j	main_bigstring
 main_bigstring_post:
 
+	# enough to scroll it completely off the left
 	la	$s2, NDCOLS
 	lw	$s2, ($s2)			# $s2 = NDCOLS
 	add $s3, $s2, $s1		# $s3 = iterations = NDCOLS + bigLength
-	sub	$s4, $s2, 1			# $s4 = NDCOLS - 1
+	sub	$s4, $s2, 1			# $s4 = starting_col = NDCOLS - 1
 	li	$s0, 0				# $s0 = i = 0
 main_show:
 	bge	$s0, $s3, main_show_post
@@ -421,7 +448,17 @@ setUpDisplay:
 # Structure:
 #	setUpDisplay
 #	-> [prologue]
-#	-> ...
+#	-> setUpDisplay_if
+#	-> setUpDisplay_else
+#		-> setUpDisplay_else_out_col
+#			-> setUpDisplay_else_row
+#			-> setUpDisplay_else_row_post
+#		-> setUpDisplay_else_out_col_post
+#	-> setUpDisplay_else_post
+#	-> setUpDisplay_copy_in_col
+#		-> setUpDisplay_copy_row
+#		-> setUpDisplay_copy_row_post
+#	-> etUpDisplay_copy_in_col_post
 #	-> [epilogue]
 
 # Code:
@@ -440,6 +477,7 @@ setUpDisplay:
 	la	$t1, NDCOLS
 	lw	$t1, ($t1)			# $t1 = NDCOLS
 
+setUpDisplay_if:
 	bgez	$a0, setUpDisplay_else
 	li	$s1, 0				# $s1 = out_col = 0
 	sub	$s3, $zero, $a0		# $s3 = first_col = -starting
@@ -513,7 +551,10 @@ showDisplay:
 # Structure:
 #	showDisplay
 #	-> [prologue]
-#	-> ...
+#	-> showDisplay_row
+#		-> showDisplay_col
+#		-> showDisplay_col_post
+#	-> showDisplay_row_post
 #	-> [epilogue]
 
 # Code:
@@ -605,8 +646,8 @@ delay:
 	# x <- 0
 	move	$t0, $zero
 	# These values control the busy-wait.
-	li	$t4, 20000
-	li	$t5, 1000
+	li	$t4, 500
+	li	$t5, 50
 
 delay_i_init:
 	# i = 0;

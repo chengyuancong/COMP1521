@@ -313,6 +313,8 @@ main_bigstring_is_space:	# if (ch == ' ')
 
 	la	$t3, CHRSIZE
 	lw	$t3, ($t3)			# $t3 = CHRSIZE
+	la	$t7, NSCOLS
+	lw	$t7, ($t7)			# $t7 = NSCOLS
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_is_space_row:
 	bge	$t1, $t3, main_bigstring_is_space_row_post
@@ -324,8 +326,8 @@ main_bigstring_is_space_col:
 	addi	$t4, $t3, 1		# CHRSIZE + 1
 	mul	$t4, $t4, $t0		# i * (CHRSIZE + 1)
 	add $t4, $t4, $t2		# col + i * (CHRSIZE + 1)
-	mul	$t5, $t1, $s1		# row * bigLength
-	add $t4, $t4, $t5		# offset = row * bigLength + col + i * (CHRSIZE+1)
+	mul	$t5, $t1, $t7		# row * NSCOLS
+	add $t4, $t4, $t5		# offset = row * NSCOLS + col + i * (CHRSIZE+1)
 	li	$t6, ' '
 	sb	$t6, bigString($t4)	# bigString[row][col + i * (CHRSIZE+1)] = ' '
 
@@ -353,6 +355,8 @@ main_bigstring_not_lower:
 
 	la	$t3, CHRSIZE
 	lw	$t3, ($t3)			# $t3 = CHRSIZE
+	la	$t7, NSCOLS
+	lw	$t7, ($t7)			# $t7 = NSCOLS
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_not_space_row:
 	bge	$t1, $t3, main_bigstring_not_space_row_post
@@ -364,7 +368,7 @@ main_bigstring_not_space_col:
 	addi	$t4, $t3, 1		# CHRSIZE + 1
 	mul	$t4, $t4, $t0		# i * (CHRSIZE + 1)
 	add $t4, $t4, $t2		# col + i * (CHRSIZE + 1)
-	mul	$t5, $t1, $s1		# row * bigLength
+	mul	$t5, $t1, $t7		# row * NSCOLS
 	add $t4, $t4, $t5		# $t4 = offset_1 
 	mul $t5, $t3, $t3		# CHRSIZE * CHRSIZE
 	mul	$t5, $t5, $s3		# which * CHRSIZE * CHRSIZE
@@ -386,8 +390,8 @@ main_bigstring_not_space_row_post:
 	li	$t1, 0				# $t1 = row = 0
 main_bigstring_fill_gap:
 	bge	$t1, $t3, main_bigstring_fill_gap_post
-	mul	$t4, $t1, $s1		# row * bigLength
-	add $t4, $t4, $t2		# $t4 = offset = row * bigLength + col
+	mul	$t4, $t1, $t7		# row * NSCOLS
+	add $t4, $t4, $t2		# $t4 = offset = row * NSCOLS + col
 	li	$t5, ' '
 	sb	$t5, bigString($t4)	# bigString[row][col] = ' '
 	addi	$t1, $t1, 1
@@ -436,8 +440,8 @@ main__post:
 setUpDisplay:
 
 # Frame:	$fp, $ra
-# Uses:		$a0, $a1, $s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4
-# Clobbers:	$s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4
+# Uses:		$a0, $a1, $s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4, $t5
+# Clobbers:	$s0, $s1, $s2, $s3, $t0, $t1, $t2, $t3, $t4, $t5
 
 # Locals:
 #	- `row' in $s0
@@ -476,6 +480,8 @@ setUpDisplay:
 	lw	$t0, ($t0)			# $t0 = NROWS
 	la	$t1, NDCOLS
 	lw	$t1, ($t1)			# $t1 = NDCOLS
+	la	$t5, NSCOLS
+	lw	$t5, ($t5)			# $t5 = NSCOLS
 
 setUpDisplay_if:
 	bgez	$a0, setUpDisplay_else
@@ -513,8 +519,8 @@ setUpDisplay_copy_row:
 	bge	$s0, $t0, setUpDisplay_copy_row_post
 	mul	$t2, $s0, $t1		# row * NDCOLS
 	add $t2, $t2, $s1		# $t2 = offset_1 = row * NDCOLS + out_col
-	mul	$t3, $s0, $a1		# row * length
-	add $t3, $t3, $s2		# $t3 = offset_2 = row * length + in_col
+	mul	$t3, $s0, $t5		# row * NSCOLS
+	add $t3, $t3, $s2		# $t3 = offset_2 = row * NSCOLS + in_col
 	lb	$t4, bigString($t3)	# $t4 = bigString[row][in_col]
 	sb	$t4, display($t2)	# display[row][out_col] = bigString[row][in_col]
 	addi	$s0, $s0, 1		# row++

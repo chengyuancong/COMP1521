@@ -2,14 +2,14 @@
 
 CC=gcc
 CFLAGS=-std=gnu99 -Wall -Werror
-LDFLAGS=-lbsd
-#LDFLAGS=
+# LDFLAGS=-lbsd
+LDFLAGS=
 
 all : myls stat
 
 myls : myls.c
-	gcc -o myls myls.c -lbsd
-
+	# gcc -o myls myls.c -lbsd
+	gcc -o myls myls.c
 stat : stat.c
 
 clean:

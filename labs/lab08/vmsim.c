@@ -74,7 +74,8 @@ int main (int argc, char **argv)
       exit(1);
    }
 
-   initPageTable(); initMemFrames();
+   initPageTable(); 
+   initMemFrames();
 
    // read from standard input
    while (fgets(line,100,stdin) != NULL) {
@@ -106,8 +107,66 @@ int main (int argc, char **argv)
 
 int physicalAddress(uint vAddr, char action)
 {
-   // TODO: write this function
-   return -1; // replace this line
+   int pAddr = 0;
+   uint pageno = vAddr / PAGESIZE;
+   uint offset = vAddr % PAGESIZE;
+   // if the page# is not valid, return -1
+   if (pageno >= nPages) {
+      return -1;
+   }
+   // if the page is already loaded
+   if (PageTable[pageno].status == Loaded) {
+      if (action == 'W') {
+         PageTable[pageno].status = Modified;
+      }
+      PageTable[pageno].lastAccessed = clock;
+      pAddr = (PageTable[pageno].frameNo) * PAGESIZE + offset;
+   } else {
+      // look for an unused frame
+      int fno = 0;
+      while (fno < nFrames && MemFrames[fno] != -1) {
+         fno++;
+      }
+      // if find one, use that
+      if (fno < nFrames) {
+         MemFrames[fno] = pageno;
+      } else {
+         // need to replace a currently loaded frame
+         nReplaces++;
+         // find the Least Recently Used loaded page
+         int least = 0;
+         int pno = 0;
+         while (pno < nPages && PageTable[pno].status != NotLoaded) {
+            pno++;
+         }
+         least = pno;
+         while (pno < nPages) {
+            if (PageTable[pno].status == NotLoaded) {
+               continue;
+            }
+            if (PageTable[pno].lastAccessed < PageTable[least].lastAccessed) {
+               least = pno;
+            }
+            pno++;
+         }
+         // increment the nSaves counter if modified
+         if (PageTable[least].status == Modified) {
+            nSaves++;
+         }
+         // set its PageTable entry to indicate "no longer loaded"
+         PageTable[least].status = NotLoaded;
+         fno = PageTable[least].frameNo;
+         PageTable[least].frameNo = -1;
+      }
+      nLoads++;
+      // set PageTable entry for the new page
+      PageTable[pageno].status = Loaded;
+      PageTable[pageno].frameNo = fno;
+      PageTable[pageno].lastAccessed = clock;
+      MemFrames[fno] = pageno;
+      pAddr = (PageTable[pageno].frameNo) * PAGESIZE + offset;
+   }
+   return pAddr;
 }
 
 // allocate and initialise Page Table

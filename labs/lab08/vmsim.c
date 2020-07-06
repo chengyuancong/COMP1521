@@ -115,7 +115,7 @@ int physicalAddress(uint vAddr, char action)
       return -1;
    }
    // if the page is already loaded
-   if (PageTable[pageno].status == Loaded) {
+   if (PageTable[pageno].status == Loaded || PageTable[pageno].status == Modified) {
       if (action == 'W') {
          PageTable[pageno].status = Modified;
       }
@@ -136,12 +136,13 @@ int physicalAddress(uint vAddr, char action)
          // find the Least Recently Used loaded page
          int least = 0;
          int pno = 0;
-         while (pno < nPages && PageTable[pno].status != NotLoaded) {
+         while (pno < nPages && PageTable[pno].status == NotLoaded) {
             pno++;
          }
          least = pno;
          while (pno < nPages) {
             if (PageTable[pno].status == NotLoaded) {
+               pno++;
                continue;
             }
             if (PageTable[pno].lastAccessed < PageTable[least].lastAccessed) {
@@ -153,17 +154,18 @@ int physicalAddress(uint vAddr, char action)
          if (PageTable[least].status == Modified) {
             nSaves++;
          }
-         // set its PageTable entry to indicate "no longer loaded"
-         PageTable[least].status = NotLoaded;
+         // set its PageTable entry to indicate "no longer loaded" 
          fno = PageTable[least].frameNo;
-         PageTable[least].frameNo = -1;
+         MemFrames[fno] = pageno;
+         PageTable[least].status = NotLoaded;
+         PageTable[least].frameNo = -1;   
+         PageTable[least].lastAccessed = -1;
       }
       nLoads++;
       // set PageTable entry for the new page
-      PageTable[pageno].status = Loaded;
+      PageTable[pageno].status = action == 'W'? Modified : Loaded;
       PageTable[pageno].frameNo = fno;
       PageTable[pageno].lastAccessed = clock;
-      MemFrames[fno] = pageno;
       pAddr = (PageTable[pageno].frameNo) * PAGESIZE + offset;
    }
    return pAddr;

@@ -141,11 +141,8 @@ int physicalAddress(uint vAddr, char action)
          }
          least = pno;
          while (pno < nPages) {
-            if (PageTable[pno].status == NotLoaded) {
-               pno++;
-               continue;
-            }
-            if (PageTable[pno].lastAccessed < PageTable[least].lastAccessed) {
+            if (PageTable[pno].lastAccessed < PageTable[least].lastAccessed
+                && PageTable[pno].status != NotLoaded) {
                least = pno;
             }
             pno++;
@@ -154,9 +151,9 @@ int physicalAddress(uint vAddr, char action)
          if (PageTable[least].status == Modified) {
             nSaves++;
          }
-         // set its PageTable entry to indicate "no longer loaded" 
          fno = PageTable[least].frameNo;
          MemFrames[fno] = pageno;
+         // set its PageTable entry to indicate "no longer loaded" 
          PageTable[least].status = NotLoaded;
          PageTable[least].frameNo = -1;   
          PageTable[least].lastAccessed = -1;

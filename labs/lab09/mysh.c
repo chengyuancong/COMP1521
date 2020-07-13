@@ -1,6 +1,6 @@
 // mysh.c ... a minimal shell
 // Started by John Shepherd, October 2017
-// Completed by <<YOU>>, ???
+// Completed by Yuancong,
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +28,7 @@ int main(int argc, char *argv[], char *envp[])
    pid_t pid;   // pid of child process
    int stat;    // return status of child
    char **path; // array of directory names
+   char **args; // array of args tokens
 
    // set up command PATH from environment variable
    int i;
@@ -54,9 +55,19 @@ int main(int argc, char *argv[], char *envp[])
       if (strcmp(line,"") == 0) { printf("mysh$ "); continue; }
 
       // TODO: implement the tokenise/fork/execute/cleanup code
-
+      pid = fork();
+      if (pid > 0) {
+         wait(&stat);
+      } else if (pid == 0) {
+         args = tokenise(line, " ");
+         execute(args, path, envp);
+         freeTokens(args); 
+      } else {
+         perror("Fork error.");
+      }
       printf("mysh$ ");
    }
+   freeTokens(path);
    printf("\n");
    return(EXIT_SUCCESS);
 }
@@ -65,6 +76,33 @@ int main(int argc, char *argv[], char *envp[])
 void execute(char **args, char **path, char **envp)
 {
    // TODO: implement the find-the-executable and execve() it code
+   char command[100];
+   int exec = 0;
+   if (args[0][0] == '/' || args[0][0] == '.') {
+      if (isExecutable(args[0])) {
+         strncpy(command, args[0], 100);
+         exec = 1;
+      }
+   } else {
+      struct stat buffer;
+      for (int i = 0; path[i] != NULL; i++) {
+         strncat(path[i], "/", 100);
+         if (!stat(strncat(path[i], args[0], 100), &buffer)) {
+            strncpy(command, path[i], 100);
+            exec = 1;
+            break;
+         }
+      }
+   }
+   if (!exec) {
+      printf("%s: Command not found\n", args[0]);
+   } else {
+      printf("Executing %s\n", command);
+      execve(command, args, envp);
+      printf("Tried to exec %s\n", args[0]);
+      perror("Exec faild");
+   }
+   exit(0);
 }
 
 // isExecutable: check whether this process can execute a file

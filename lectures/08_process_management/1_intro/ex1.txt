@@ -1,0 +1,16 @@
+How can I find out:
+what processes I currently have running
+ps will only show processes running in the current terminal for current user
+ps u will show all processes for the user on the current machine OR
+ps -u dp1092 will show all processes for the user dp1092
+
+what are all of the processes running on the system
+ps -e
+or
+ps -ef to get more information about the processes
+
+what are the top CPU-using processes
+top
+
+who's logged in and what they're doing
+w

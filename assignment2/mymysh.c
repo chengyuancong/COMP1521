@@ -1,6 +1,6 @@
 // mysh.c ... a small shell
 // Started by John Shepherd, September 2018
-// Completed by <<YOU>>, <<WHEN>>
+// Completed by Yuancong, July 2020
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,6 +31,7 @@ char *findExecutable(char *, char **);
 int isExecutable(char *);
 void prompt(void);
 
+char **replaceToken(char **, glob_t);
 
 // Global Constants
 
@@ -62,6 +63,7 @@ int main(int argc, char *argv[], char *envp[])
    else
       // &envp[i][5] skips over "PATH=" prefix
       path = tokenise(&envp[i][5],":");
+      
 #ifdef DBUG
    for (i = 0; path[i] != NULL;i++)
       printf("path[%d] = %s\n",i,path[i]);
@@ -85,6 +87,11 @@ int main(int argc, char *argv[], char *envp[])
       // - addToCommandHistory()
       // - showCommandHistory()
       // - and many other functions
+      if (!strcmp(line, "\n")) {
+         prompt();
+         continue;
+      }
+      
       // TODO
 
       prompt();
@@ -98,8 +105,19 @@ int main(int argc, char *argv[], char *envp[])
 // fileNameExpand: expand any wildcards in command-line args
 // - returns a possibly larger set of tokens
 char **fileNameExpand(char **tokens)
-{
-   // TODO
+{  
+   glob_t buffer;
+   for (int i = 0; tokens[i] != NULL; i++) {
+      if (strContains(tokens[i], "*")
+         || strContains(tokens[i], "?")
+         || strContains(tokens[i], "[")
+         || strContains(tokens[i], "~")) {
+            glob(tokens[i], GLOB_NOCHECK|GLOB_TILDE, NULL, &buffer);
+            tokens = replaceTokens(tokens, buffer);
+            globfree(&buffer);
+         }
+   }
+   return tokens;
 }
 
 // findExecutable: look for executable in PATH
@@ -214,4 +232,10 @@ int strContains(char *str, char *chars)
 void prompt(void)
 {
    printf("mymysh$ ");
+}
+
+// replace a token by tokens in buffer that matched it 
+char **replaceToken(char **tokens, glob_t buffer) {
+   // TODO
+   return tokens;
 }

@@ -77,27 +77,47 @@ int main(int argc, char *argv[], char *envp[])
    // main loop: print prompt, read line, execute command
 
    char line[MAXLINE];
+   char **args;
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
-      trim(line); // remove leading/trailing space
+      // remove leading/trailing space
+      trim(line);
 
-      // TODO
-      // Code to implement mainloop goes here
-      // Uses
-      // - addToCommandHistory()
-      // - showCommandHistory()
-      // - and many other functions
-      if (!strcmp(line, "\n")) {
+      // if command is "exit", exit
+      if (!strcmp(line,"exit")) break;
+
+      // if empty command, ignore
+      if (!strcmp(line, "")) {
          prompt();
          continue;
       }
-      
-      // TODO
 
+      // handle ! history substitution 
+      
+      // tokenise
+      args = tokenise(line, " ");
+
+      // handle *?[~ filename expansion
+      args = fileNameExpand(args);
+
+      // handle shell built-ins
+
+      // check for input/output redirections
+      
+      // find executable using first token
+
+      // if none, then Command not found
+
+      // sort out any redirections
+
+      // run the command
+
+      // print prompt
       prompt();
    }
    saveCommandHistory();
    cleanCommandHistory();
+   freeTokens(path);
    printf("\n");
    return(EXIT_SUCCESS);
 }
@@ -107,16 +127,21 @@ int main(int argc, char *argv[], char *envp[])
 char **fileNameExpand(char **tokens)
 {  
    glob_t buffer;
-   for (int i = 0; tokens[i] != NULL; i++) {
-      if (strContains(tokens[i], "*")
-         || strContains(tokens[i], "?")
-         || strContains(tokens[i], "[")
-         || strContains(tokens[i], "~")) {
-            glob(tokens[i], GLOB_NOCHECK|GLOB_TILDE, NULL, &buffer);
-            tokens = replaceTokens(tokens, buffer);
-            globfree(&buffer);
-         }
+   int i = 0;
+   if (tokens[i] != NULL) {
+      glob(tokens[i], GLOB_NOCHECK|GLOB_TILDE, NULL, &buffer);
+      i++;
    }
+   for ( ; tokens[i] != NULL; i++) {
+      glob(tokens[i], GLOB_NOCHECK|GLOB_TILDE|GLOB_APPEND, NULL, &buffer);
+   }
+   tokens = realloc(tokens, (buffer.gl_pathc + 1) * sizeof(char *));
+   assert(tokens != NULL);
+   for (i = 0; i < buffer.gl_pathc; i++) {
+      tokens[i] = strdup(buffer.gl_pathv[i]);
+   }
+   tokens[i] = NULL;
+   globfree(&buffer);
    return tokens;
 }
 
@@ -232,10 +257,4 @@ int strContains(char *str, char *chars)
 void prompt(void)
 {
    printf("mymysh$ ");
-}
-
-// replace a token by tokens in buffer that matched it 
-char **replaceToken(char **tokens, glob_t buffer) {
-   // TODO
-   return tokens;
 }

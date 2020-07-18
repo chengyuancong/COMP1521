@@ -32,24 +32,27 @@ typedef struct _history_list {
 
 HistoryList CommandHistory;
 
+char histPath[MAXSTR];
+
 // initCommandHistory()
 // - initialise the data structure
 // - read from .mymysh_history if it exists
 
 int initCommandHistory()
-{
-   FILE *hisf = fopen(HISTFILE, "r");
+{  
+   initHistoryPath();
+   FILE *histf = fopen(histPath, "r");
    CommandHistory.nEntries = 0;
-   if (hisf != NULL) {
+   if (histf != NULL) {
       char buffer[MAXLINE];
-      while (fgets(buffer, MAXLINE, hisf) != NULL) {
-         sscanf(buffer, " %3d  %s", 
+      while (fgets(buffer, MAXLINE, histf) != NULL) {
+         sscanf(buffer, " %d  %s", 
                &(CommandHistory.commands[CommandHistory.nEntries].seqNumber),
                CommandHistory.commands[CommandHistory.nEntries].commandLine);
          CommandHistory.nEntries++;
       }
    }
-   fclose(hisf);
+   fclose(histf);
    return CommandHistory.nEntries;
 }
 
@@ -59,7 +62,18 @@ int initCommandHistory()
 
 void addToCommandHistory(char *cmdLine, int seqNo)
 {
-   // TODO
+   if (CommandHistory.nEntries < 20) {
+      CommandHistory.commands[CommandHistory.nEntries].seqNumber = seqNo;
+      strcpy(CommandHistory.commands[CommandHistory.nEntries].commandLine, cmdLine);
+      CommandHistory.nEntries++;
+   } else if (CommandHistory.nEntries == 20) {
+      int i;
+      for (i = 0; i < (CommandHistory.nEntries - 1); i++) {
+         CommandHistory.commands[i] = CommandHistory.commands[i+1];
+      }
+      CommandHistory.commands[i].seqNumber = seqNo;
+      strcpy(CommandHistory.commands[i].commandLine, cmdLine);
+   }
 }
 
 // showCommandHistory()
@@ -67,7 +81,11 @@ void addToCommandHistory(char *cmdLine, int seqNo)
 
 void showCommandHistory(FILE *outf)
 {
-   // TODO
+   for (int i = 0; i < CommandHistory.nEntries; i++) {
+      fprintf(outf, " %3d  %s", 
+             CommandHistory.commands[i].seqNumber, 
+             CommandHistory.commands[i].commandLine);
+   }
 }
 
 // getCommandFromHistory()
@@ -76,15 +94,23 @@ void showCommandHistory(FILE *outf)
 
 char *getCommandFromHistory(int cmdNo)
 {
-   // TODO
+   if (CommandHistory.nEntries > 0 
+      && (cmdNo - CommandHistory.commands[0].seqNumber) >= 0 
+      && (cmdNo - CommandHistory.commands[0].seqNumber) < CommandHistory.nEntries) {
+      return CommandHistory.commands[cmdNo - CommandHistory.commands[0].seqNumber].commandLine;
+   } else {
+      return NULL;
+   }
 }
 
 // saveCommandHistory()
 // - write history to $HOME/.mymysh_history
 
 void saveCommandHistory()
-{
-   // TODO
+{  
+   FILE *histf = fopen(histPath, "w");
+   showCommandHistory(histf);
+   fclose(histf);
 }
 
 // cleanCommandHistory
@@ -92,5 +118,14 @@ void saveCommandHistory()
 
 void cleanCommandHistory()
 {
-   // TODO
+   for (int i = 0; i < CommandHistory.nEntries; i++) {
+      CommandHistory.commands[i].seqNumber = 0;
+      strcpy(CommandHistory.commands[i].commandLine, "");
+   }
+   CommandHistory.nEntries = 0;
+}
+
+void initHistoryPath() {
+   strcpy(histPath, getenv("HOME"));
+   strcat(histPath, HISTFILE);
 }

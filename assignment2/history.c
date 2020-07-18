@@ -16,12 +16,13 @@
 
 #define MAXHIST 20
 #define MAXSTR  200
+#define MAXLINE (MAXSTR+6)
 
 #define HISTFILE ".mymysh_history"
 
 typedef struct _history_entry {
-   int   seqNumber;
-   char *commandLine;
+   int seqNumber;
+   char commandLine[MAXSTR];
 } HistoryEntry;
 
 typedef struct _history_list {
@@ -33,11 +34,23 @@ HistoryList CommandHistory;
 
 // initCommandHistory()
 // - initialise the data structure
-// - read from .history if it exists
+// - read from .mymysh_history if it exists
 
 int initCommandHistory()
 {
-   // TODO
+   FILE *hisf = fopen(HISTFILE, "r");
+   CommandHistory.nEntries = 0;
+   if (hisf != NULL) {
+      char buffer[MAXLINE];
+      while (fgets(buffer, MAXLINE, hisf) != NULL) {
+         sscanf(buffer, " %3d  %s", 
+               &(CommandHistory.commands[CommandHistory.nEntries].seqNumber),
+               CommandHistory.commands[CommandHistory.nEntries].commandLine);
+         CommandHistory.nEntries++;
+      }
+   }
+   fclose(hisf);
+   return CommandHistory.nEntries;
 }
 
 // addToCommandHistory()

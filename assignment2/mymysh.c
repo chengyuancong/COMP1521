@@ -30,11 +30,9 @@ void freeTokens(char **);
 char *findExecutable(char *, char **);
 int isExecutable(char *);
 void prompt(void);
-
-char **replaceToken(char **, glob_t);
+void pwd(void);
 
 // Global Constants
-
 #define MAXLINE 200
 
 // Global Data
@@ -51,7 +49,8 @@ int main(int argc, char *argv[], char *envp[])
    pid_t pid;   // pid of child process
    int stat;    // return status of child
    char **path; // array of directory names
-   int cmdNo;   // command number
+   int cmdNo;   // indicate which command number to get
+   int seqNo;   // seqence number of the last entry
    int i;       // generic index
 
    // set up command PATH from environment variable
@@ -71,8 +70,7 @@ int main(int argc, char *argv[], char *envp[])
 
    // initialise command history
    // - use content of ~/.mymysh_history file if it exists
-
-   cmdNo = initCommandHistory();
+   seqNo = initCommandHistory();
 
    // main loop: print prompt, read line, execute command
 
@@ -80,6 +78,8 @@ int main(int argc, char *argv[], char *envp[])
    char **args;
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
+      printf("%s", line);
+
       // remove leading/trailing space
       trim(line);
 
@@ -92,7 +92,26 @@ int main(int argc, char *argv[], char *envp[])
          continue;
       }
 
-      // handle ! history substitution 
+      // handle ! history substitution
+      if (line[0] == '!') {
+         if (line[1] == '!') {
+            if (seqNo != 0) {
+               strcpy(line, getCommandFromHistory(seqNo));
+            } else {
+               printf("No command #0\n");
+            }           
+         } else {
+            if (sscanf(line, "!%d", cmdNo) == 1) {
+               if (getCommandFromHistory(cmdNo) != NULL) {
+                  strcpy(line, getCommandFromHistory(cmdNo));
+               } else {
+                  printf("No command #%d\n", cmdNo);
+               }
+            } else {
+               printf("Invalid history substitution\n");
+            }
+         }
+      }
       
       // tokenise
       args = tokenise(line, " ");
@@ -101,11 +120,29 @@ int main(int argc, char *argv[], char *envp[])
       args = fileNameExpand(args);
 
       // handle shell built-ins
+      if (!strcmp(args[0], "h") || !strcmp(args[0], "history")) {
+         showCommandHistory(stdout);
+         addToCommandHistory(line, seqNo++);
+      }
+
+      if (!strcmp(args[0], "pwd")) {
+         pwd();
+         addToCommandHistory(line, seqNo++);
+      }
+
+      if (!strcmp(args[0], "cd")) {
+         if (!chdir(args[1])) {
+            pwd();
+            addToCommandHistory(line, seqNo++);
+         } else {
+            printf("%s: No such file or directory\n", args[1]);
+         }    
+      }
 
       // check for input/output redirections
       
       // find executable using first token
-
+      
       // if none, then Command not found
 
       // sort out any redirections
@@ -145,6 +182,7 @@ char **fileNameExpand(char **tokens)
    return tokens;
 }
 
+
 // findExecutable: look for executable in PATH
 char *findExecutable(char *cmd, char **path)
 {
@@ -154,8 +192,7 @@ char *findExecutable(char *cmd, char **path)
          strcpy(executable, cmd);
          if (!isExecutable(executable))
             executable[0] = '\0';
-      }
-      else {
+      } else {
          int i;
          for (i = 0; path[i] != NULL; i++) {
             sprintf(executable, "%s/%s", path[i], cmd);
@@ -257,4 +294,11 @@ int strContains(char *str, char *chars)
 void prompt(void)
 {
    printf("mymysh$ ");
+}
+
+// pwd: print current working directory
+void pwd(void) {
+   char buffer[MAXLINE];
+   getcwd(buffer, sizeof(buffer));
+   printf("%s\n", buffer);
 }

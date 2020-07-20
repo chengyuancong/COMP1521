@@ -76,6 +76,8 @@ int main(int argc, char *argv[], char *envp[])
 
    char line[MAXLINE];
    char **args;
+   char *fullpath;
+   int success = 0;
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
       printf("%s", line);
@@ -99,16 +101,22 @@ int main(int argc, char *argv[], char *envp[])
                strcpy(line, getCommandFromHistory(seqNo));
             } else {
                printf("No command #0\n");
+               prompt();
+               continue;
             }           
          } else {
-            if (sscanf(line, "!%d", cmdNo) == 1) {
+            if (sscanf(line, "!%d", &cmdNo) == 1) {
                if (getCommandFromHistory(cmdNo) != NULL) {
                   strcpy(line, getCommandFromHistory(cmdNo));
                } else {
                   printf("No command #%d\n", cmdNo);
+                  prompt();
+                  continue;
                }
             } else {
                printf("Invalid history substitution\n");
+               prompt();
+               continue;
             }
          }
       }
@@ -122,39 +130,76 @@ int main(int argc, char *argv[], char *envp[])
       // handle shell built-ins
       if (!strcmp(args[0], "h") || !strcmp(args[0], "history")) {
          showCommandHistory(stdout);
-         addToCommandHistory(line, seqNo++);
+         seqNo++;
+         addToCommandHistory(line, seqNo);
+         prompt();
+         continue;
       }
 
       if (!strcmp(args[0], "pwd")) {
          pwd();
-         addToCommandHistory(line, seqNo++);
+         seqNo++;
+         addToCommandHistory(line, seqNo);
+         prompt();
+         continue;
       }
 
       if (!strcmp(args[0], "cd")) {
          if (!chdir(args[1])) {
             pwd();
-            addToCommandHistory(line, seqNo++);
+            seqNo++;
+            addToCommandHistory(line, seqNo);
          } else {
             printf("%s: No such file or directory\n", args[1]);
-         }    
+         }
+         prompt();
+         continue;  
       }
 
       // check for input/output redirections
       
       // find executable using first token
-      
+      fullpath = findExecutable(args[0], path);
+
       // if none, then Command not found
+      if (fullpath == NULL) {
+         printf("%s: Command not found\n", args[0]);
+         prompt();
+         continue;
+      }
 
       // sort out any redirections
 
       // run the command
+      printf("Running %s ...\n", fullpath);
+      printf("--------------------\n");
 
+      pid = fork();
+      if (pid > 0) {
+         wait(&stat);
+      } else if (pid == 0) {
+         success = execve(fullpath, args, envp);
+      } else {
+         perror("Fork error: ");
+      }
+
+      printf("--------------------\n");
+      if (success == 0) {
+         printf("Returns 0\n");
+         seqNo++;
+         addToCommandHistory(line, seqNo);
+      } else {
+         printf("Returns 1\n");
+      }
+      
       // print prompt
       prompt();
    }
    saveCommandHistory();
    cleanCommandHistory();
    freeTokens(path);
+   freeTokens(args);
+   free(fullpath);
    printf("\n");
    return(EXIT_SUCCESS);
 }

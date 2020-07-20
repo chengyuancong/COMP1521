@@ -11,3 +11,4 @@ void showCommandHistory(FILE *histFile);
 char *getCommandFromHistory(int cmdNo);
 void saveCommandHistory();
 void cleanCommandHistory();
+void initHistoryPath();

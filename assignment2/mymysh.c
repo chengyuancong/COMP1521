@@ -23,7 +23,6 @@
 // Function forward references
 
 void trim(char *);
-int strContains(char *, char *);
 char **tokenise(char *, char *);
 char **fileNameExpand(char **);
 void freeTokens(char **);
@@ -39,6 +38,10 @@ void redirect(char **, int);
 
 // Global Constants
 #define MAXLINE 200
+
+#define VALID   0
+#define INVALID 1
+#define NONE    2
 
 // Global Data
 
@@ -83,6 +86,7 @@ int main(int argc, char *argv[], char *envp[])
    char **args;
    char *fullpath;
    int length = 0;
+   int redirctStatus = 0;
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
 
@@ -165,8 +169,9 @@ int main(int argc, char *argv[], char *envp[])
 
       // check for input/output redirections
       length = howManyTokens(args);
-
-      if (checkRedirect(args, length)) {
+      
+      redirctStatus = checkRedirect(args, length);
+      if (redirctStatus == INVALID) {
          prompt();
          freeTokens(args);
          continue;
@@ -194,9 +199,12 @@ int main(int argc, char *argv[], char *envp[])
       } else if (pid == 0) {
          
          // sort out redirections
-         redirect(args, length);
+         if (redirctStatus == VALID) {
+            redirect(args, length);
+         }
          
          execve(fullpath, args, envp);
+
       } else {
          perror("Fork error: ");
       }
@@ -368,35 +376,34 @@ int checkRedirect(char **tokens, int length) {
    if (length < 2) {
       if (!strcmp(tokens[0], ">") || !strcmp(tokens[0], "<")) {
          printf("Invalid i/o redirection\n");
-         return 1;
+         return INVALID;
       } else {
-         return 0;
+         return NONE;
       }
    }
-   if (!strcmp(tokens[length-2], ">") || !strcmp(tokens[length-2], "<")) {
-      for (int i = 0; tokens[i] != NULL; i++) {
-         if (!(strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) && (i != length - 2 || i == 0)) {
-            printf("Invalid i/o redirection\n");
-            return 1;
-         }
+   for (int i = 0; tokens[i] != NULL; i++) {
+      if ((!strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) && (i != length - 2 || i == 0)) {
+         printf("Invalid i/o redirection\n");
+         return INVALID;
       }
-      if (!strcmp(tokens[length-2], "<")) {
-         if (!checkInput(tokens[length-1])) {
-            return 0;
-         } else {
-            return 1;
-         }
+   }
+   if (!strcmp(tokens[length-2], "<")) {
+      if (!checkInput(tokens[length-1])) {
+         return VALID;
       } else {
-         if (!checkOutput(tokens[length-1])) {
-            return 0;
-         } else {
-            return 1;
-         }
+         return INVALID;
+      }
+   } else if (!strcmp(tokens[length-2], ">")) {
+      if (!checkOutput(tokens[length-1])) {
+         return VALID;
+      } else {
+         return INVALID;
       }
    } else {
-      return 0;
+      return NONE;
    }
-}
+}  
+
 
 // 
 int checkInput(char *arg) {
@@ -436,7 +443,7 @@ void redirect(char **tokens, int length) {
       free(tokens[length-2]);
       tokens[length-2] = NULL;
    } else if (!strcmp(tokens[length-2], ">")) {
-      int outputFd = open(tokens[length-1], O_WRONLY|O_CREAT);
+      int outputFd = open(tokens[length-1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
       dup2(outputFd, STDOUT_FILENO);
       free(tokens[length-1]);
       free(tokens[length-2]);

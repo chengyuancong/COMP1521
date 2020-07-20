@@ -18,7 +18,7 @@
 #define MAXSTR  200
 #define MAXLINE (MAXSTR+6)
 
-#define HISTFILE ".mymysh_history"
+#define HISTFILE "/.mymysh_history"
 
 typedef struct _history_entry {
    int seqNumber;
@@ -51,8 +51,8 @@ int initCommandHistory()
                CommandHistory.commands[CommandHistory.nEntries].commandLine);
          CommandHistory.nEntries++;
       }
+      fclose(histf);
    }
-   fclose(histf);
    return CommandHistory.nEntries == 0? 0:CommandHistory.commands[CommandHistory.nEntries-1].seqNumber;
 }
 

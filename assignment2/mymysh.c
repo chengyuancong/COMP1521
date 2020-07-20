@@ -31,6 +31,11 @@ char *findExecutable(char *, char **);
 int isExecutable(char *);
 void prompt(void);
 void pwd(void);
+int checkRedirect(char **, int);
+int howManyTokens(char **);
+int checkInput(char *);
+int checkOutput(char *);
+void redirect(char **, int);
 
 // Global Constants
 #define MAXLINE 200
@@ -77,10 +82,9 @@ int main(int argc, char *argv[], char *envp[])
    char line[MAXLINE];
    char **args;
    char *fullpath;
-   int success = 0;
+   int length = 0;
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
-      printf("%s", line);
 
       // remove leading/trailing space
       trim(line);
@@ -133,6 +137,7 @@ int main(int argc, char *argv[], char *envp[])
          seqNo++;
          addToCommandHistory(line, seqNo);
          prompt();
+         freeTokens(args);
          continue;
       }
 
@@ -141,6 +146,7 @@ int main(int argc, char *argv[], char *envp[])
          seqNo++;
          addToCommandHistory(line, seqNo);
          prompt();
+         freeTokens(args);
          continue;
       }
 
@@ -153,10 +159,18 @@ int main(int argc, char *argv[], char *envp[])
             printf("%s: No such file or directory\n", args[1]);
          }
          prompt();
+         freeTokens(args);
          continue;  
       }
 
       // check for input/output redirections
+      length = howManyTokens(args);
+
+      if (checkRedirect(args, length)) {
+         prompt();
+         freeTokens(args);
+         continue;
+      }
       
       // find executable using first token
       fullpath = findExecutable(args[0], path);
@@ -164,11 +178,11 @@ int main(int argc, char *argv[], char *envp[])
       // if none, then Command not found
       if (fullpath == NULL) {
          printf("%s: Command not found\n", args[0]);
+         freeTokens(args);
+         free(fullpath);
          prompt();
          continue;
       }
-
-      // sort out any redirections
 
       // run the command
       printf("Running %s ...\n", fullpath);
@@ -178,28 +192,31 @@ int main(int argc, char *argv[], char *envp[])
       if (pid > 0) {
          wait(&stat);
       } else if (pid == 0) {
-         success = execve(fullpath, args, envp);
+         
+         // sort out redirections
+         redirect(args, length);
+         
+         execve(fullpath, args, envp);
       } else {
          perror("Fork error: ");
       }
+      if (WEXITSTATUS(stat) == 255) {
+         printf("%s: unknown type of executable\n", args[0]);
+      }
 
       printf("--------------------\n");
-      if (success == 0) {
-         printf("Returns 0\n");
-         seqNo++;
-         addToCommandHistory(line, seqNo);
-      } else {
-         printf("Returns 1\n");
-      }
+      printf("Returns %d\n", WEXITSTATUS(stat));
+      seqNo++;
+      addToCommandHistory(line, seqNo);
       
       // print prompt
       prompt();
+      freeTokens(args);
+      free(fullpath);
    }
    saveCommandHistory();
    cleanCommandHistory();
-   freeTokens(path);
-   freeTokens(args);
-   free(fullpath);
+   freeTokens(path); 
    printf("\n");
    return(EXIT_SUCCESS);
 }
@@ -303,11 +320,11 @@ char **tokenise(char *str, char *sep)
 }
 
 // freeTokens: free memory associated with array of tokens
-void freeTokens(char **toks)
+void freeTokens(char **tokens)
 {
-   for (int i = 0; toks[i] != NULL; i++)
-      free(toks[i]);
-   free(toks);
+   for (int i = 0; tokens[i] != NULL; i++)
+      free(tokens[i]);
+   free(tokens);
 }
 
 // trim: remove leading/trailing spaces from a string
@@ -323,17 +340,6 @@ void trim(char *str)
    str[j] = '\0';
 }
 
-// strContains: does the first string contain any char from 2nd string?
-int strContains(char *str, char *chars)
-{
-   for (char *s = str; *s != '\0'; s++) {
-      for (char *c = chars; *c != '\0'; c++) {
-         if (*s == *c) return 1;
-      }
-   }
-   return 0;
-}
-
 // prompt: print a shell prompt
 // done as a function to allow switching to $PS1
 void prompt(void)
@@ -346,4 +352,94 @@ void pwd(void) {
    char buffer[MAXLINE];
    getcwd(buffer, sizeof(buffer));
    printf("%s\n", buffer);
+}
+
+// count how many tokens are in char **tokens
+int howManyTokens(char **tokens) {
+   int length = 0;
+   while (tokens[length] != NULL) {
+      length++;
+   }
+   return length;
+}
+
+// checkRedirect: check if the redirection can be executed
+int checkRedirect(char **tokens, int length) {
+   if (length < 2) {
+      if (!strcmp(tokens[0], ">") || !strcmp(tokens[0], "<")) {
+         printf("Invalid i/o redirection\n");
+         return 1;
+      } else {
+         return 0;
+      }
+   }
+   if (!strcmp(tokens[length-2], ">") || !strcmp(tokens[length-2], "<")) {
+      for (int i = 0; tokens[i] != NULL; i++) {
+         if (!(strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) && (i != length - 2 || i == 0)) {
+            printf("Invalid i/o redirection\n");
+            return 1;
+         }
+      }
+      if (!strcmp(tokens[length-2], "<")) {
+         if (!checkInput(tokens[length-1])) {
+            return 0;
+         } else {
+            return 1;
+         }
+      } else {
+         if (!checkOutput(tokens[length-1])) {
+            return 0;
+         } else {
+            return 1;
+         }
+      }
+   } else {
+      return 0;
+   }
+}
+
+// 
+int checkInput(char *arg) {
+   if (access(arg, F_OK) == 0) {
+      if (access(arg, R_OK) == 0) {
+         return 0;
+      } else {
+         printf("Input redirection: Permission denied\n");
+         return 1;
+      }
+   } else {
+      printf("Input redirection: No such file or directory\n");
+      return 1;
+   }
+}
+
+// 
+int checkOutput(char *arg) {
+   if (access(arg, F_OK) == 0) {
+      if (access(arg, W_OK) == 0) {
+         return 0;
+      } else {
+         printf("Output redirection: Permission denied\n");
+         return 1;
+      }
+   } else {
+      return 0;
+   }
+}
+
+// 
+void redirect(char **tokens, int length) {
+   if (!strcmp(tokens[length-2], "<")) {
+      int inputFd = open(tokens[length-1], O_RDONLY);
+      dup2(inputFd, STDIN_FILENO);
+      free(tokens[length-1]);
+      free(tokens[length-2]);
+      tokens[length-2] = NULL;
+   } else if (!strcmp(tokens[length-2], ">")) {
+      int outputFd = open(tokens[length-1], O_WRONLY|O_CREAT);
+      dup2(outputFd, STDOUT_FILENO);
+      free(tokens[length-1]);
+      free(tokens[length-2]);
+      tokens[length-2] = NULL;
+   }
 }

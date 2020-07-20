@@ -53,7 +53,7 @@ int initCommandHistory()
       }
    }
    fclose(histf);
-   return CommandHistory.nEntries;
+   return CommandHistory.nEntries == 0? 0:CommandHistory.commands[CommandHistory.nEntries-1].seqNumber;
 }
 
 // addToCommandHistory()
@@ -82,7 +82,7 @@ void addToCommandHistory(char *cmdLine, int seqNo)
 void showCommandHistory(FILE *outf)
 {
    for (int i = 0; i < CommandHistory.nEntries; i++) {
-      fprintf(outf, " %3d  %s", 
+      fprintf(outf, " %3d  %s\n", 
              CommandHistory.commands[i].seqNumber, 
              CommandHistory.commands[i].commandLine);
    }

@@ -155,7 +155,7 @@ int main(int argc, char *argv[], char *envp[])
       }
 
       if (!strcmp(args[0], "cd")) {
-         if (!chdir(args[1])) {
+         if (args[1] == NULL || !chdir(args[1])) {
             pwd();
             seqNo++;
             addToCommandHistory(line, seqNo);
@@ -204,6 +204,7 @@ int main(int argc, char *argv[], char *envp[])
          }
          
          execve(fullpath, args, envp);
+         exit(-1);
 
       } else {
          perror("Fork error: ");
@@ -242,7 +243,8 @@ char **fileNameExpand(char **tokens)
    for ( ; tokens[i] != NULL; i++) {
       glob(tokens[i], GLOB_NOCHECK|GLOB_TILDE|GLOB_APPEND, NULL, &buffer);
    }
-   tokens = realloc(tokens, (buffer.gl_pathc + 1) * sizeof(char *));
+   freeTokens(tokens);
+   tokens = malloc((buffer.gl_pathc + 1) * sizeof(char *));
    assert(tokens != NULL);
    for (i = 0; i < buffer.gl_pathc; i++) {
       tokens[i] = strdup(buffer.gl_pathv[i]);

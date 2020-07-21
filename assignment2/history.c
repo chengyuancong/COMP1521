@@ -46,7 +46,7 @@ int initCommandHistory()
    if (histf != NULL) {
       char buffer[MAXLINE];
       while (fgets(buffer, MAXLINE, histf) != NULL) {
-         sscanf(buffer, " %d  %s", 
+         sscanf(buffer, " %d  %[^\n]", 
                &(CommandHistory.commands[CommandHistory.nEntries].seqNumber),
                CommandHistory.commands[CommandHistory.nEntries].commandLine);
          CommandHistory.nEntries++;

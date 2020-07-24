@@ -53,7 +53,8 @@ int initCommandHistory()
       }
       fclose(histf);
    }
-   return CommandHistory.nEntries == 0? 0:CommandHistory.commands[CommandHistory.nEntries-1].seqNumber;
+   return CommandHistory.nEntries == 0? 
+          0:CommandHistory.commands[CommandHistory.nEntries-1].seqNumber;
 }
 
 // addToCommandHistory()
@@ -124,6 +125,8 @@ void cleanCommandHistory()
    }
    CommandHistory.nEntries = 0;
 }
+
+// expand the path of /.mymysh_history
 
 void initHistoryPath() {
    strcpy(histPath, getenv("HOME"));

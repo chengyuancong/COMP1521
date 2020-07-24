@@ -39,13 +39,9 @@ void redirect(char **, int);
 // Global Constants
 #define MAXLINE 200
 
-#define VALID   0
-#define INVALID 1
-#define NONE    2
-
-// Global Data
-
-/* none ... unless you want some */
+#define VALID   0    // return VALID if redirection can be done
+#define INVALID 1    // return INVALD if redirction cannot be done
+#define NONE    2    // return NONE if not redirction is detected
 
 
 // Main program
@@ -82,11 +78,12 @@ int main(int argc, char *argv[], char *envp[])
 
    // main loop: print prompt, read line, execute command
 
-   char line[MAXLINE];
-   char **args;
-   char *fullpath;
-   int length = 0;
-   int redirctStatus = 0;
+   char line[MAXLINE];     // input line buffer
+   char **args;            // arguements holding tokenised lines
+   char *fullpath;         // fullpath of executable
+   int length = 0;         // numbers of tokens
+   int redirctStatus = 0;  // hold a value which determine whther to redirect
+   
    prompt();
    while (fgets(line, MAXLINE, stdin) != NULL) {
 
@@ -230,6 +227,7 @@ int main(int argc, char *argv[], char *envp[])
    return(EXIT_SUCCESS);
 }
 
+
 // fileNameExpand: expand any wildcards in command-line args
 // - returns a possibly larger set of tokens
 char **fileNameExpand(char **tokens)
@@ -278,6 +276,7 @@ char *findExecutable(char *cmd, char **path)
          return strdup(executable);
 }
 
+
 // isExecutable: check whether this process can execute a file
 int isExecutable(char *cmd)
 {
@@ -300,6 +299,7 @@ int isExecutable(char *cmd)
       return 1;
    return 0;
 }
+
 
 // tokenise: split a string around a set of separators
 // create an array of separate strings
@@ -329,6 +329,7 @@ char **tokenise(char *str, char *sep)
    return strings;
 }
 
+
 // freeTokens: free memory associated with array of tokens
 void freeTokens(char **tokens)
 {
@@ -336,6 +337,7 @@ void freeTokens(char **tokens)
       free(tokens[i]);
    free(tokens);
 }
+
 
 // trim: remove leading/trailing spaces from a string
 void trim(char *str)
@@ -350,12 +352,14 @@ void trim(char *str)
    str[j] = '\0';
 }
 
+
 // prompt: print a shell prompt
 // done as a function to allow switching to $PS1
 void prompt(void)
 {
    printf("mymysh$ ");
 }
+
 
 // pwd: print current working directory
 void pwd(void) {
@@ -364,7 +368,8 @@ void pwd(void) {
    printf("%s\n", buffer);
 }
 
-// count how many tokens are in char **tokens
+
+// howManyTokens: count how many tokens are in char **tokens
 int howManyTokens(char **tokens) {
    int length = 0;
    while (tokens[length] != NULL) {
@@ -372,6 +377,7 @@ int howManyTokens(char **tokens) {
    }
    return length;
 }
+
 
 // checkRedirect: check if the redirection can be executed
 int checkRedirect(char **tokens, int length) {
@@ -407,7 +413,7 @@ int checkRedirect(char **tokens, int length) {
 }  
 
 
-// 
+// checkInput: check if the input document exist or can be access
 int checkInput(char *arg) {
    if (access(arg, F_OK) == 0) {
       if (access(arg, R_OK) == 0) {
@@ -422,7 +428,8 @@ int checkInput(char *arg) {
    }
 }
 
-// 
+
+// checkOutput: check if the output ducument can be access
 int checkOutput(char *arg) {
    if (access(arg, F_OK) == 0) {
       if (access(arg, W_OK) == 0) {
@@ -436,7 +443,8 @@ int checkOutput(char *arg) {
    }
 }
 
-// 
+
+// redirct: redirect stdin/stdout to objected ducuments
 void redirect(char **tokens, int length) {
    if (!strcmp(tokens[length-2], "<")) {
       int inputFd = open(tokens[length-1], O_RDONLY);

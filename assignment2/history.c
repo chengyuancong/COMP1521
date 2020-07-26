@@ -65,7 +65,8 @@ void addToCommandHistory(char *cmdLine, int seqNo)
 {
    if (CommandHistory.nEntries < 20) {
       CommandHistory.commands[CommandHistory.nEntries].seqNumber = seqNo;
-      strcpy(CommandHistory.commands[CommandHistory.nEntries].commandLine, cmdLine);
+      strcpy(CommandHistory.commands[CommandHistory.nEntries].
+             commandLine, cmdLine);
       CommandHistory.nEntries++;
    } else if (CommandHistory.nEntries == 20) {
       int i;
@@ -97,8 +98,10 @@ char *getCommandFromHistory(int cmdNo)
 {
    if (CommandHistory.nEntries > 0 
       && (cmdNo - CommandHistory.commands[0].seqNumber) >= 0 
-      && (cmdNo - CommandHistory.commands[0].seqNumber) < CommandHistory.nEntries) {
-      return CommandHistory.commands[cmdNo - CommandHistory.commands[0].seqNumber].commandLine;
+      && (cmdNo - CommandHistory.commands[0].seqNumber)
+          < CommandHistory.nEntries) {
+      return CommandHistory.
+            commands[cmdNo - CommandHistory.commands[0].seqNumber].commandLine;
    } else {
       return NULL;
    }

@@ -14,6 +14,7 @@
 #include <glob.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "history.h"
 
 // This is defined in string.h
@@ -104,6 +105,7 @@ int main(int argc, char *argv[], char *envp[])
          if (line[1] == '!') {
             if (seqNo != 0) {
                strcpy(line, getCommandFromHistory(seqNo));
+               printf("%s\n", line);
             } else {
                printf("No command #0\n");
                prompt();
@@ -113,6 +115,7 @@ int main(int argc, char *argv[], char *envp[])
             if (sscanf(line, "!%d", &cmdNo) == 1) {
                if (getCommandFromHistory(cmdNo) != NULL) {
                   strcpy(line, getCommandFromHistory(cmdNo));
+                  printf("%s\n",line);
                } else {
                   printf("No command #%d\n", cmdNo);
                   prompt();
@@ -152,12 +155,12 @@ int main(int argc, char *argv[], char *envp[])
       }
 
       if (!strcmp(args[0], "cd")) {
-         if (args[1] == NULL || !chdir(args[1])) {
+         if (args[1] == NULL || chdir(args[1]) == 0) {
             pwd();
             seqNo++;
             addToCommandHistory(line, seqNo);
          } else {
-            printf("%s: No such file or directory\n", args[1]);
+            printf("%s: %s\n", args[1],strerror(errno));
          }
          prompt();
          freeTokens(args);
@@ -370,7 +373,8 @@ void pwd(void) {
 
 
 // howManyTokens: count how many tokens are in char **tokens
-int howManyTokens(char **tokens) {
+int howManyTokens(char **tokens)
+{
    int length = 0;
    while (tokens[length] != NULL) {
       length++;
@@ -380,7 +384,8 @@ int howManyTokens(char **tokens) {
 
 
 // checkRedirect: check if the redirection can be executed
-int checkRedirect(char **tokens, int length) {
+int checkRedirect(char **tokens, int length)
+{
    if (length < 2) {
       if (!strcmp(tokens[0], ">") || !strcmp(tokens[0], "<")) {
          printf("Invalid i/o redirection\n");
@@ -390,7 +395,8 @@ int checkRedirect(char **tokens, int length) {
       }
    }
    for (int i = 0; tokens[i] != NULL; i++) {
-      if ((!strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) && (i != length - 2 || i == 0)) {
+      if ((!strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) 
+           && (i != length - 2 || i == 0)) {
          printf("Invalid i/o redirection\n");
          return INVALID;
       }
@@ -414,38 +420,36 @@ int checkRedirect(char **tokens, int length) {
 
 
 // checkInput: check if the input document exist or can be access
-int checkInput(char *arg) {
-   if (access(arg, F_OK) == 0) {
-      if (access(arg, R_OK) == 0) {
-         return 0;
-      } else {
-         printf("Input redirection: Permission denied\n");
-         return 1;
-      }
+int checkInput(char *arg)
+{
+   FILE *input = fopen(arg, "r");
+   if (input != NULL) {
+      fclose(input);
+      return 0;
    } else {
-      printf("Input redirection: No such file or directory\n");
+      perror("Input redirection");
       return 1;
    }
 }
 
 
 // checkOutput: check if the output ducument can be access
-int checkOutput(char *arg) {
-   if (access(arg, F_OK) == 0) {
-      if (access(arg, W_OK) == 0) {
-         return 0;
-      } else {
-         printf("Output redirection: Permission denied\n");
-         return 1;
-      }
-   } else {
+int checkOutput(char *arg)
+{
+   FILE *output = fopen(arg, "w");
+   if (output != NULL) {
+      fclose(output);
       return 0;
+   } else {
+      perror("Output redirection");
+      return 1;
    }
 }
 
 
 // redirct: redirect stdin/stdout to objected ducuments
-void redirect(char **tokens, int length) {
+void redirect(char **tokens, int length)
+{
    if (!strcmp(tokens[length-2], "<")) {
       int inputFd = open(tokens[length-1], O_RDONLY);
       dup2(inputFd, STDIN_FILENO);

@@ -155,12 +155,19 @@ int main(int argc, char *argv[], char *envp[])
       }
 
       if (!strcmp(args[0], "cd")) {
-         if (args[1] == NULL || chdir(args[1]) == 0) {
+         if (args[1] == NULL) {
+            chdir(getenv("HOME"));
             pwd();
             seqNo++;
             addToCommandHistory(line, seqNo);
          } else {
-            printf("%s: %s\n", args[1],strerror(errno));
+            if (chdir(args[1]) == 0) {
+               pwd();
+               seqNo++;
+               addToCommandHistory(line, seqNo);
+            } else {
+               printf("%s: %s\n", args[1],strerror(errno));   
+            }
          }
          prompt();
          freeTokens(args);

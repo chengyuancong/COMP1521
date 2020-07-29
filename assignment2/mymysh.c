@@ -40,9 +40,9 @@ void redirect(char **, int);
 // Global Constants
 #define MAXLINE 200
 
-#define VALID   0    // return VALID if redirection can be done
-#define INVALID 1    // return INVALD if redirction cannot be done
-#define NONE    2    // return NONE if not redirction is detected
+#define VALID   0
+#define INVALID 1
+#define NONE    2
 
 
 // Main program
@@ -102,6 +102,7 @@ int main(int argc, char *argv[], char *envp[])
 
       // handle ! history substitution
       if (line[0] == '!') {
+         // !!
          if (line[1] == '!') {
             if (seqNo != 0) {
                strcpy(line, getCommandFromHistory(seqNo));
@@ -112,6 +113,7 @@ int main(int argc, char *argv[], char *envp[])
                continue;
             }           
          } else {
+            // !#
             if (sscanf(line, "!%d", &cmdNo) == 1) {
                if (getCommandFromHistory(cmdNo) != NULL) {
                   strcpy(line, getCommandFromHistory(cmdNo));
@@ -155,11 +157,13 @@ int main(int argc, char *argv[], char *envp[])
       }
 
       if (!strcmp(args[0], "cd")) {
+         // cd -> "HOME"
          if (args[1] == NULL) {
             chdir(getenv("HOME"));
             pwd();
             seqNo++;
             addToCommandHistory(line, seqNo);
+         // cd path
          } else {
             if (chdir(args[1]) == 0) {
                pwd();
@@ -391,8 +395,12 @@ int howManyTokens(char **tokens)
 
 
 // checkRedirect: check if the redirection can be executed
+// return VALID if redirection can be done
+// return INVALD if redirction cannot be done
+// return NONE if not redirction is detected
 int checkRedirect(char **tokens, int length)
-{
+{  
+   // if number of tokens is <= 1 and ">" or "<" appears, definitly invalid
    if (length < 2) {
       if (!strcmp(tokens[0], ">") || !strcmp(tokens[0], "<")) {
          printf("Invalid i/o redirection\n");
@@ -401,6 +409,7 @@ int checkRedirect(char **tokens, int length)
          return NONE;
       }
    }
+   // if >= 2, check if it is in right place
    for (int i = 0; tokens[i] != NULL; i++) {
       if ((!strcmp(tokens[i], ">") || !strcmp(tokens[i], "<")) 
            && (i != length - 2 || i == 0)) {
@@ -408,6 +417,7 @@ int checkRedirect(char **tokens, int length)
          return INVALID;
       }
    }
+   // if right, check if the objected file is accessable
    if (!strcmp(tokens[length-2], "<")) {
       if (!checkInput(tokens[length-1])) {
          return VALID;
@@ -420,6 +430,7 @@ int checkRedirect(char **tokens, int length)
       } else {
          return INVALID;
       }
+   // if no ">" or "<", return NONE
    } else {
       return NONE;
    }

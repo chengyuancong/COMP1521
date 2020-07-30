@@ -215,13 +215,11 @@ int main(int argc, char *argv[], char *envp[])
          }
          
          execve(fullpath, args, envp);
+         printf("%s: unknown type of executable\n", args[0]);
          exit(-1);
 
       } else {
-         perror("Fork error: ");
-      }
-      if (WEXITSTATUS(stat) == 255) {
-         printf("%s: unknown type of executable\n", args[0]);
+         perror("Fork error");
       }
 
       printf("--------------------\n");
